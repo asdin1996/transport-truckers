@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
-        $this->call(CamioneroSeeder::class);
+        $this->call([
+            EmpresaSeeder::class,
+            CamioneroSeeder::class,
+        ]);
     }
 }
