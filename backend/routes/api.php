@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\VehiculoController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,4 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Vehículos — admin y camionero pueden acceder
     Route::apiResource('vehiculos', VehiculoController::class);
+
+    // Rutas — admin y camionero pueden acceder
+    Route::apiResource('rutas', RutaController::class);
 });
