@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\VehiculoController;
+use App\Http\Controllers\Api\ViajeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -21,4 +22,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas — admin y camionero pueden acceder
     Route::apiResource('rutas', RutaController::class);
+
+    // Viajes
+    Route::apiResource('viajes', ViajeController::class);
+    Route::patch('viajes/{id}/estado', [ViajeController::class, 'cambiarEstado']);
 });

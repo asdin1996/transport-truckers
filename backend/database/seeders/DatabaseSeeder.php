@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             VehiculoSeeder::class,
             RutaSeeder::class,
             CamioneroSeeder::class,
+            ViajeSeeder::class,
         ]);
     }
 }
