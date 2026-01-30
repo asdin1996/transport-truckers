@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             RutaSeeder::class,
             CamioneroSeeder::class,
             ViajeSeeder::class,
+            GastoSeeder::class,
         ]);
     }
 }

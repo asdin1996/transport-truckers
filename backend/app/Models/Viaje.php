@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Viaje extends Model
@@ -44,5 +45,10 @@ class Viaje extends Model
     public function ruta(): BelongsTo
     {
         return $this->belongsTo(Ruta::class);
+    }
+
+    public function gastos(): HasMany
+    {
+        return $this->hasMany(Gasto::class);
     }
 }

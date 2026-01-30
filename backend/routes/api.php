@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\VehiculoController;
 use App\Http\Controllers\Api\ViajeController;
@@ -26,4 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Viajes
     Route::apiResource('viajes', ViajeController::class);
     Route::patch('viajes/{id}/estado', [ViajeController::class, 'cambiarEstado']);
+
+    // Gastos
+    Route::apiResource('gastos', GastoController::class);
 });
