@@ -51,4 +51,9 @@ class Viaje extends Model
     {
         return $this->hasMany(Gasto::class);
     }
+
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(Documento::class);
+    }
 }

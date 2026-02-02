@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DocumentoController;
 use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\VehiculoController;
@@ -30,4 +31,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Gastos
     Route::apiResource('gastos', GastoController::class);
+
+    // Documentos
+    Route::apiResource('documentos', DocumentoController::class);
+    Route::get('documentos/{id}/descargar', [DocumentoController::class, 'descargar']);
 });
