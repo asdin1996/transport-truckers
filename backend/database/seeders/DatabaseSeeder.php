@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             ViajeSeeder::class,
             GastoSeeder::class,
             DocumentoSeeder::class,
+            MensajeSeeder::class,
         ]);
     }
 }
