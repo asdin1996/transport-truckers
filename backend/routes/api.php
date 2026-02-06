@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DocumentoController;
 use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\MensajeController;
+use App\Http\Controllers\Api\UbicacionController;
 use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\VehiculoController;
 use App\Http\Controllers\Api\ViajeController;
@@ -42,4 +43,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('mensajes/no-leidos', [MensajeController::class, 'noLeidos']);
     Route::get('mensajes/conversacion/{userId}', [MensajeController::class, 'conversacion']);
     Route::patch('mensajes/leidos/{userId}', [MensajeController::class, 'marcarLeidos']);
+
+    // Ubicaciones GPS
+    Route::post('ubicaciones', [UbicacionController::class, 'store']);
+    Route::get('ubicaciones/camionero/{camioneroId}', [UbicacionController::class, 'ultimaPorCamionero']);
+    Route::get('ubicaciones/viaje/{viajeId}', [UbicacionController::class, 'ultimaPorViaje']);
+    Route::get('ubicaciones/viaje/{viajeId}/historial', [UbicacionController::class, 'historialPorViaje']);
 });
