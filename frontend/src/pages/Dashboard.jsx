@@ -1,14 +1,133 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { getViajes } from '../services/viajes'
+import { getGastos } from '../services/gastos'
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const [viajes, setViajes] = useState([])
+  const [gastos, setGastos] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([getViajes()])
+      .then(([vRes]) => {
+        const todos = vRes.data.data ?? []
+        setViajes(todos)
+
+        const activos = todos.filter((v) => v.estado === 'en_curso')
+        if (activos.length > 0) {
+          return Promise.all(activos.map((v) => getGastos(v.id)))
+        }
+        return []
+      })
+      .then((results) => {
+        const todos = results.flatMap((r) => r?.data?.data ?? [])
+        setGastos(todos.slice(0, 5))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const activos = viajes.filter((v) => v.estado === 'en_curso')
+  const pendientes = viajes.filter((v) => v.estado === 'pendiente')
+
+  if (loading) {
+    return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
+  }
 
   return (
     <div>
-      <h2 style={{ marginBottom: 8 }}>Bienvenido, {user?.name}</h2>
-      <p style={{ color: 'var(--color-text-muted)' }}>
-        Panel de control — próximamente con estadísticas y resúmenes.
-      </p>
+      <div className="page-header">
+        <h2>Bienvenido, {user?.name}</h2>
+      </div>
+
+      <div className="dashboard-grid">
+        {/* Estadísticas */}
+        <div className="stats-row">
+          <StatCard label="Viajes en curso" value={activos.length} color="var(--color-primary)" />
+          <StatCard label="Viajes pendientes" value={pendientes.length} color="#ffc107" />
+          <StatCard label="Total viajes" value={viajes.length} color="#42a5f5" />
+        </div>
+
+        {/* Viajes activos */}
+        <div className="card" style={{ marginTop: 20 }}>
+          <p className="card__title">Viajes en curso</p>
+          {activos.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No hay viajes activos.</p>
+          ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ruta</th>
+                    <th>Vehículo</th>
+                    <th>Inicio</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activos.map((v) => (
+                    <tr key={v.id}>
+                      <td>
+                        {v.ruta?.origen ?? '—'} → {v.ruta?.destino ?? '—'}
+                      </td>
+                      <td>{v.vehiculo?.matricula ?? '—'}</td>
+                      <td>{v.fecha_inicio ? new Date(v.fecha_inicio).toLocaleDateString('es-ES') : '—'}</td>
+                      <td>
+                        <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">
+                          Ver
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Últimos gastos */}
+        <div className="card" style={{ marginTop: 20 }}>
+          <p className="card__title">Últimos gastos</p>
+          {gastos.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin gastos registrados.</p>
+          ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Importe</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gastos.map((g) => (
+                    <tr key={g.id}>
+                      <td style={{ textTransform: 'capitalize' }}>{g.tipo}</td>
+                      <td>{parseFloat(g.importe).toFixed(2)} €</td>
+                      <td>{g.fecha ? new Date(g.fecha).toLocaleDateString('es-ES') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, color }) {
+  return (
+    <div className="stat-card">
+      <span className="stat-card__value" style={{ color }}>
+        {value}
+      </span>
+      <span className="stat-card__label">{label}</span>
     </div>
   )
 }
