@@ -1,17 +1,18 @@
 import { useLocation } from 'react-router-dom'
 
 const TITLES = {
-  '/dashboard':  'Dashboard',
-  '/camioneros': 'Camioneros',
-  '/vehiculos':  'Vehículos',
-  '/viajes':     'Viajes',
-  '/mensajes':   'Mensajes',
-  '/mapa':       'Mapa GPS',
+  '/dashboard':      'Dashboard',
+  '/camioneros':     'Camioneros',
+  '/vehiculos':      'Vehículos',
+  '/viajes':         'Viajes',
+  '/viajes/nuevo':   'Nuevo viaje',
+  '/mensajes':       'Mensajes',
+  '/mapa':           'Mapa GPS',
 }
 
 export default function Header({ onMenuClick }) {
   const { pathname } = useLocation()
-  const title = TITLES[pathname] ?? 'CamionApp'
+  const title = TITLES[pathname] ?? (pathname.startsWith('/viajes/') ? 'Detalle viaje' : 'CamionApp')
 
   return (
     <header className="header">
