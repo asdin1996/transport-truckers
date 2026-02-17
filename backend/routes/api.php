@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CamioneroController;
 use App\Http\Controllers\Api\DocumentoController;
 use App\Http\Controllers\Api\GastoController;
+use App\Http\Controllers\Api\GestionController;
 use App\Http\Controllers\Api\MensajeController;
 use App\Http\Controllers\Api\UbicacionController;
 use App\Http\Controllers\Api\RutaController;
@@ -21,6 +23,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
+    // Camioneros — solo admin
+    Route::apiResource('camioneros', CamioneroController::class);
+
     // Vehículos — admin y camionero pueden acceder
     Route::apiResource('vehiculos', VehiculoController::class);
 
@@ -30,6 +35,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Viajes
     Route::apiResource('viajes', ViajeController::class);
     Route::patch('viajes/{id}/estado', [ViajeController::class, 'cambiarEstado']);
+
+    // Gestiones (notas/comentarios de un viaje)
+    Route::get('viajes/{viajeId}/gestiones', [GestionController::class, 'index']);
+    Route::post('viajes/{viajeId}/gestiones', [GestionController::class, 'store']);
+    Route::patch('viajes/{viajeId}/gestiones/{id}', [GestionController::class, 'update']);
+    Route::delete('viajes/{viajeId}/gestiones/{id}', [GestionController::class, 'destroy']);
 
     // Gastos
     Route::apiResource('gastos', GastoController::class);
