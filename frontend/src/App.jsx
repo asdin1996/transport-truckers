@@ -6,7 +6,7 @@ import Login from './pages/Login'
 import DashboardRouter from './pages/DashboardRouter'
 import Viajes from './pages/Viajes'
 import ViajeDetalle from './pages/ViajeDetalle'
-import NuevoGasto from './pages/NuevoGasto'
+import Mensajes from './pages/Mensajes'
 import Camioneros from './pages/admin/Camioneros'
 import Vehiculos from './pages/admin/Vehiculos'
 import NuevoViaje from './pages/admin/NuevoViaje'
@@ -27,9 +27,9 @@ export default function App() {
               {/* /viajes/nuevo debe ir ANTES de /viajes/:id */}
               <Route path="/viajes/nuevo" element={<NuevoViaje />} />
               <Route path="/viajes/:id" element={<ViajeDetalle />} />
-              <Route path="/viajes/:id/gastos/nuevo" element={<NuevoGasto />} />
               <Route path="/camioneros" element={<Camioneros />} />
               <Route path="/vehiculos" element={<Vehiculos />} />
+              <Route path="/mensajes" element={<Mensajes />} />
               <Route path="/mapa" element={<MapaGps />} />
             </Route>
           </Route>

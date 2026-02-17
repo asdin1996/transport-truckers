@@ -31,13 +31,17 @@ const NAV_CAMIONERO = [
   },
 ]
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ open, onClose, onExpand, onCollapse }) {
   const { user, logout, isAdmin } = useAuth()
   const nav = isAdmin() ? NAV_ADMIN : NAV_CAMIONERO
   const initials = user?.name?.slice(0, 2).toUpperCase() ?? '??'
 
   return (
-    <aside className={`sidebar${open ? ' open' : ''}`}>
+    <aside
+      className={`sidebar${open ? ' open' : ''}`}
+      onMouseEnter={onExpand}
+      onMouseLeave={onCollapse}
+    >
       <div className="sidebar__logo">
         <div className="sidebar__logo-icon">🚛</div>
         <span className="sidebar__logo-text">CamionApp</span>
@@ -51,11 +55,12 @@ export default function Sidebar({ open, onClose }) {
               <NavLink
                 key={link.to}
                 to={link.to}
+                title={link.label}
                 className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
                 onClick={onClose}
               >
                 <span className="nav-link__icon">{link.icon}</span>
-                {link.label}
+                <span className="nav-link__label">{link.label}</span>
               </NavLink>
             ))}
           </div>
