@@ -1,24 +1,58 @@
-*.log
-.DS_Store
+# Dependencias
+/vendor
+/node_modules
+
+# Entorno
 .env
 .env.backup
 .env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
+.env.*.local
 /auth.json
-/node_modules
+
+# Caché de bootstrap (generado por artisan)
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
+
+# Storage — logs, sesiones, vistas compiladas, caché
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitkeep
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitkeep
+/storage/framework/testing/*
+!/storage/framework/testing/.gitkeep
+/storage/framework/views/*
+!/storage/framework/views/.gitkeep
+/storage/app/public/*
+!/storage/app/public/.gitkeep
+/storage/*.key
+/storage/pail
+
+# Build del frontend (si se genera dentro de public)
 /public/build
 /public/hot
 /public/storage
-/storage/*.key
-/storage/pail
-/vendor
+
+# Tests
+.phpunit.result.cache
+/.phpunit.cache
+
+# IDEs y editores
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
+/.phpactor.json
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Vagrant
 Homestead.json
 Homestead.yaml
-Thumbs.db
+
+# Logs PHP genéricos
+*.log
