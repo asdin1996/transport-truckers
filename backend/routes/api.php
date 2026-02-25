@@ -22,6 +22,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/admin-contact', [AuthController::class, 'adminContact']);
 
     // Camioneros — solo admin
     Route::apiResource('camioneros', CamioneroController::class);
@@ -34,30 +35,31 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Viajes
     Route::apiResource('viajes', ViajeController::class);
-    Route::patch('viajes/{id}/estado', [ViajeController::class, 'cambiarEstado']);
+    Route::patch('viajes/{id}/estado', [ViajeController::class, 'changeStatus']);
+    Route::patch('viajes/{id}/paradas', [ViajeController::class, 'updateParadas']);
 
     // Gestiones (notas/comentarios de un viaje)
-    Route::get('viajes/{viajeId}/gestiones', [GestionController::class, 'index']);
-    Route::post('viajes/{viajeId}/gestiones', [GestionController::class, 'store']);
-    Route::patch('viajes/{viajeId}/gestiones/{id}', [GestionController::class, 'update']);
-    Route::delete('viajes/{viajeId}/gestiones/{id}', [GestionController::class, 'destroy']);
+    Route::get('viajes/{tripId}/gestiones', [GestionController::class, 'index']);
+    Route::post('viajes/{tripId}/gestiones', [GestionController::class, 'store']);
+    Route::patch('viajes/{tripId}/gestiones/{id}', [GestionController::class, 'update']);
+    Route::delete('viajes/{tripId}/gestiones/{id}', [GestionController::class, 'destroy']);
 
     // Gastos
     Route::apiResource('gastos', GastoController::class);
 
     // Documentos
     Route::apiResource('documentos', DocumentoController::class);
-    Route::get('documentos/{id}/descargar', [DocumentoController::class, 'descargar']);
+    Route::get('documentos/{id}/descargar', [DocumentoController::class, 'download']);
 
     // Mensajes
     Route::post('mensajes', [MensajeController::class, 'store']);
-    Route::get('mensajes/no-leidos', [MensajeController::class, 'noLeidos']);
-    Route::get('mensajes/conversacion/{userId}', [MensajeController::class, 'conversacion']);
-    Route::patch('mensajes/leidos/{userId}', [MensajeController::class, 'marcarLeidos']);
+    Route::get('mensajes/no-leidos', [MensajeController::class, 'unread']);
+    Route::get('mensajes/conversacion/{userId}', [MensajeController::class, 'conversation']);
+    Route::patch('mensajes/leidos/{userId}', [MensajeController::class, 'markAsRead']);
 
     // Ubicaciones GPS
     Route::post('ubicaciones', [UbicacionController::class, 'store']);
-    Route::get('ubicaciones/camionero/{camioneroId}', [UbicacionController::class, 'ultimaPorCamionero']);
-    Route::get('ubicaciones/viaje/{viajeId}', [UbicacionController::class, 'ultimaPorViaje']);
-    Route::get('ubicaciones/viaje/{viajeId}/historial', [UbicacionController::class, 'historialPorViaje']);
+    Route::get('ubicaciones/camionero/{driverId}', [UbicacionController::class, 'latestByDriver']);
+    Route::get('ubicaciones/viaje/{tripId}', [UbicacionController::class, 'latestByTrip']);
+    Route::get('ubicaciones/viaje/{tripId}/historial', [UbicacionController::class, 'historyByTrip']);
 });

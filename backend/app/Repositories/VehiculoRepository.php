@@ -13,11 +13,17 @@ class VehiculoRepository extends BaseRepository
 
     public function allWithEmpresa()
     {
-        return $this->model->with('empresa')->get();
+        return $this->model
+            ->with('empresa')
+            ->withExists(['viajes as en_viaje' => fn ($q) => $q->where('estado', 'en_curso')])
+            ->get();
     }
 
     public function findWithEmpresa(int $id): ?Vehiculo
     {
-        return $this->model->with('empresa')->find($id);
+        return $this->model
+            ->with('empresa')
+            ->withExists(['viajes as en_viaje' => fn ($q) => $q->where('estado', 'en_curso')])
+            ->find($id);
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Gasto;
-use App\Models\Viaje;
 use App\Repositories\GastoRepository;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -15,54 +14,54 @@ class GastoService extends BaseService
         parent::__construct($repository);
     }
 
-    public function porViaje(int $viajeId)
+    public function byTrip(int $viajeId)
     {
-        return $this->repository->porViaje($viajeId);
+        return $this->repository->byTrip($viajeId);
     }
 
-    public function obtener(int $id): ?Gasto
+    public function find(int $id): ?Gasto
     {
         return $this->repository->findWithViaje($id);
     }
 
-    public function crear(array $data, ?UploadedFile $foto): Gasto
+    public function create(array $data, ?UploadedFile $photo): Gasto
     {
-        if ($foto) {
-            $data['foto_ticket'] = $foto->store('tickets', 'public');
+        if ($photo) {
+            $data['foto_ticket'] = $photo->store('tickets', 'public');
         }
 
         return $this->repository->create($data);
     }
 
-    public function actualizar(int $id, array $data, ?UploadedFile $foto): bool
+    public function update(int $id, array $data, ?UploadedFile $photo): bool
     {
-        if ($foto) {
-            $gasto = $this->repository->findById($id);
-            if ($gasto?->foto_ticket) {
-                Storage::disk('public')->delete($gasto->foto_ticket);
+        if ($photo) {
+            $expense = $this->repository->findById($id);
+            if ($expense?->foto_ticket) {
+                Storage::disk('public')->delete($expense->foto_ticket);
             }
-            $data['foto_ticket'] = $foto->store('tickets', 'public');
+            $data['foto_ticket'] = $photo->store('tickets', 'public');
         }
 
         return $this->repository->update($id, $data);
     }
 
-    public function eliminar(int $id): bool
+    public function delete(int $id): bool
     {
-        $gasto = $this->repository->findById($id);
-        if ($gasto?->foto_ticket) {
-            Storage::disk('public')->delete($gasto->foto_ticket);
+        $expense = $this->repository->findById($id);
+        if ($expense?->foto_ticket) {
+            Storage::disk('public')->delete($expense->foto_ticket);
         }
 
         return $this->repository->delete($id);
     }
 
-    public function puedeAcceder(Gasto $gasto, int $camioneroId, bool $esAdmin): bool
+    public function canAccess(Gasto $expense, int $camioneroId, bool $isAdmin): bool
     {
-        if ($esAdmin) {
+        if ($isAdmin) {
             return true;
         }
 
-        return $gasto->viaje->camionero_id === $camioneroId;
+        return $expense->viaje->camionero_id === $camioneroId;
     }
 }

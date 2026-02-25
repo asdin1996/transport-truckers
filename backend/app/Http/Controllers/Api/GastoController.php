@@ -16,36 +16,36 @@ class GastoController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $viajeId = $request->query('viaje_id');
+        $tripId = $request->query('viaje_id');
 
-        $gastos = $viajeId
-            ? $this->service->porViaje((int) $viajeId)
+        $expenses = $tripId
+            ? $this->service->byTrip((int) $tripId)
             : collect();
 
         return response()->json([
             'status' => 'ok',
             'message' => null,
-            'data' => $gastos,
+            'data' => $expenses,
         ]);
     }
 
     public function store(StoreGastoRequest $request): JsonResponse
     {
         $data = $request->except('foto_ticket');
-        $gasto = $this->service->crear($data, $request->file('foto_ticket'));
+        $expense = $this->service->create($data, $request->file('foto_ticket'));
 
         return response()->json([
             'status' => 'ok',
             'message' => 'Gasto registrado correctamente.',
-            'data' => $this->service->obtener($gasto->id),
+            'data' => $this->service->find($expense->id),
         ], Response::HTTP_CREATED);
     }
 
     public function show(int $id): JsonResponse
     {
-        $gasto = $this->service->obtener($id);
+        $expense = $this->service->find($id);
 
-        if (! $gasto) {
+        if (! $expense) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gasto no encontrado.',
@@ -54,7 +54,7 @@ class GastoController extends Controller
         }
 
         $user = auth()->user();
-        if (! $this->service->puedeAcceder($gasto, $user->camionero?->id ?? 0, $user->isAdmin())) {
+        if (! $this->service->canAccess($expense, $user->camionero?->id ?? 0, $user->isAdmin())) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No tienes permiso para ver este gasto.',
@@ -65,15 +65,15 @@ class GastoController extends Controller
         return response()->json([
             'status' => 'ok',
             'message' => null,
-            'data' => $gasto,
+            'data' => $expense,
         ]);
     }
 
     public function update(UpdateGastoRequest $request, int $id): JsonResponse
     {
-        $gasto = $this->service->obtener($id);
+        $expense = $this->service->find($id);
 
-        if (! $gasto) {
+        if (! $expense) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gasto no encontrado.',
@@ -82,7 +82,7 @@ class GastoController extends Controller
         }
 
         $user = auth()->user();
-        if (! $this->service->puedeAcceder($gasto, $user->camionero?->id ?? 0, $user->isAdmin())) {
+        if (! $this->service->canAccess($expense, $user->camionero?->id ?? 0, $user->isAdmin())) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No tienes permiso para modificar este gasto.',
@@ -91,20 +91,20 @@ class GastoController extends Controller
         }
 
         $data = $request->except('foto_ticket');
-        $this->service->actualizar($id, $data, $request->file('foto_ticket'));
+        $this->service->update($id, $data, $request->file('foto_ticket'));
 
         return response()->json([
             'status' => 'ok',
             'message' => 'Gasto actualizado correctamente.',
-            'data' => $this->service->obtener($id),
+            'data' => $this->service->find($id),
         ]);
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $gasto = $this->service->obtener($id);
+        $expense = $this->service->find($id);
 
-        if (! $gasto) {
+        if (! $expense) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gasto no encontrado.',
@@ -113,7 +113,7 @@ class GastoController extends Controller
         }
 
         $user = auth()->user();
-        if (! $this->service->puedeAcceder($gasto, $user->camionero?->id ?? 0, $user->isAdmin())) {
+        if (! $this->service->canAccess($expense, $user->camionero?->id ?? 0, $user->isAdmin())) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No tienes permiso para eliminar este gasto.',
@@ -121,7 +121,7 @@ class GastoController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $this->service->eliminar($id);
+        $this->service->delete($id);
 
         return response()->json([
             'status' => 'ok',

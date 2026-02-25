@@ -24,20 +24,20 @@ class UbicacionController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $ubicacion = $this->service->registrar($user->camionero->id, $request->validated());
+        $location = $this->service->register($user->camionero->id, $request->validated());
 
         return response()->json([
             'status'  => 'ok',
             'message' => 'Ubicación registrada correctamente.',
-            'data'    => $ubicacion,
+            'data'    => $location,
         ], Response::HTTP_CREATED);
     }
 
-    public function ultimaPorCamionero(int $camioneroId): JsonResponse
+    public function latestByDriver(int $driverId): JsonResponse
     {
-        $ubicacion = $this->service->ultimaPorCamionero($camioneroId);
+        $location = $this->service->latestByDriver($driverId);
 
-        if (! $ubicacion) {
+        if (! $location) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'No hay ubicaciones registradas para este camionero.',
@@ -48,15 +48,15 @@ class UbicacionController extends Controller
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $ubicacion,
+            'data'    => $location,
         ]);
     }
 
-    public function ultimaPorViaje(int $viajeId): JsonResponse
+    public function latestByTrip(int $tripId): JsonResponse
     {
-        $ubicacion = $this->service->ultimaPorViaje($viajeId);
+        $location = $this->service->latestByTrip($tripId);
 
-        if (! $ubicacion) {
+        if (! $location) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'No hay ubicaciones registradas para este viaje.',
@@ -67,18 +67,18 @@ class UbicacionController extends Controller
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $ubicacion,
+            'data'    => $location,
         ]);
     }
 
-    public function historialPorViaje(int $viajeId): JsonResponse
+    public function historyByTrip(int $tripId): JsonResponse
     {
-        $ubicaciones = $this->service->historialPorViaje($viajeId);
+        $locations = $this->service->historyByTrip($tripId);
 
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $ubicaciones,
+            'data'    => $locations,
         ]);
     }
 }

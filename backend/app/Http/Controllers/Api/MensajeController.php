@@ -15,45 +15,45 @@ class MensajeController extends Controller
 
     public function store(StoreMensajeRequest $request): JsonResponse
     {
-        $mensaje = $this->service->enviar(auth()->id(), $request->validated());
+        $message = $this->service->send(auth()->id(), $request->validated());
 
         return response()->json([
             'status'  => 'ok',
             'message' => 'Mensaje enviado correctamente.',
-            'data'    => $mensaje->load(['remitente', 'destinatario']),
+            'data'    => $message->load(['remitente', 'destinatario']),
         ], Response::HTTP_CREATED);
     }
 
-    public function conversacion(Request $request, int $userId): JsonResponse
+    public function conversation(Request $request, int $userId): JsonResponse
     {
-        $mensajes = $this->service->conversacion(auth()->id(), $userId);
+        $messages = $this->service->conversation(auth()->id(), $userId);
 
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $mensajes,
+            'data'    => $messages,
         ]);
     }
 
-    public function noLeidos(): JsonResponse
+    public function unread(): JsonResponse
     {
-        $mensajes = $this->service->noLeidos(auth()->id());
+        $messages = $this->service->unread(auth()->id());
 
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $mensajes,
+            'data'    => $messages,
         ]);
     }
 
-    public function marcarLeidos(int $userId): JsonResponse
+    public function markAsRead(int $userId): JsonResponse
     {
-        $actualizados = $this->service->marcarLeidosEnConversacion($userId, auth()->id());
+        $updated = $this->service->markConversationAsRead($userId, auth()->id());
 
         return response()->json([
             'status'  => 'ok',
-            'message' => "{$actualizados} mensaje(s) marcado(s) como leído(s).",
-            'data'    => ['actualizados' => $actualizados],
+            'message' => "{$updated} mensaje(s) marcado(s) como leído(s).",
+            'data'    => ['updated' => $updated],
         ]);
     }
 }

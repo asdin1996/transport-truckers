@@ -13,7 +13,7 @@ class ViajeService extends BaseService
         parent::__construct($repository);
     }
 
-    public function listar()
+    public function getAll()
     {
         $user = Auth::user();
 
@@ -21,35 +21,46 @@ class ViajeService extends BaseService
             return $this->repository->allWithRelations();
         }
 
-        return $this->repository->porCamionero($user->camionero->id);
+        return $this->repository->byDriver($user->camionero->id);
     }
 
-    public function obtener(int $id): ?Viaje
+    public function find(int $id): ?Viaje
     {
         return $this->repository->findWithRelations($id);
     }
 
-    public function crear(array $data): Viaje
+    public function create(array $data): Viaje
     {
         return $this->repository->create($data);
     }
 
-    public function actualizar(int $id, array $data): bool
+    public function update(int $id, array $data): bool
     {
         return $this->repository->update($id, $data);
     }
 
-    public function cambiarEstado(Viaje $viaje, string $estado): bool
+    public function changeStatus(Viaje $viaje, string $status): bool
     {
-        return $this->repository->update($viaje->id, ['estado' => $estado]);
+        $data = ['estado' => $status];
+
+        if ($status === 'en_curso' && ! $viaje->hora_inicio) {
+            $data['hora_inicio'] = now();
+        }
+
+        if ($status === 'completado' && $viaje->hora_inicio) {
+            $data['hora_fin'] = now();
+            $data['duracion_minutos'] = (int) $viaje->hora_inicio->diffInMinutes(now());
+        }
+
+        return $this->repository->update($viaje->id, $data);
     }
 
-    public function eliminar(int $id): bool
+    public function delete(int $id): bool
     {
         return $this->repository->delete($id);
     }
 
-    public function puedeAcceder(Viaje $viaje): bool
+    public function canAccess(Viaje $viaje): bool
     {
         $user = Auth::user();
 

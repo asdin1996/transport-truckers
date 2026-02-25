@@ -11,7 +11,7 @@ class GastoRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function porViaje(int $viajeId)
+    public function byTrip(int $viajeId)
     {
         return $this->model->where('viaje_id', $viajeId)->get();
     }

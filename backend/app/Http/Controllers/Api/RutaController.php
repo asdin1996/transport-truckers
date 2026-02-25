@@ -18,26 +18,26 @@ class RutaController extends Controller
         return response()->json([
             'status' => 'ok',
             'message' => null,
-            'data' => $this->service->listar(),
+            'data' => $this->service->getAll(),
         ]);
     }
 
     public function store(StoreRutaRequest $request): JsonResponse
     {
-        $ruta = $this->service->crear($request->validated());
+        $route = $this->service->create($request->validated());
 
         return response()->json([
             'status' => 'ok',
             'message' => 'Ruta creada correctamente.',
-            'data' => $ruta,
+            'data' => $route,
         ], Response::HTTP_CREATED);
     }
 
     public function show(int $id): JsonResponse
     {
-        $ruta = $this->service->obtener($id);
+        $route = $this->service->find($id);
 
-        if (! $ruta) {
+        if (! $route) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Ruta no encontrada.',
@@ -48,15 +48,15 @@ class RutaController extends Controller
         return response()->json([
             'status' => 'ok',
             'message' => null,
-            'data' => $ruta,
+            'data' => $route,
         ]);
     }
 
     public function update(UpdateRutaRequest $request, int $id): JsonResponse
     {
-        $ruta = $this->service->obtener($id);
+        $route = $this->service->find($id);
 
-        if (! $ruta) {
+        if (! $route) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Ruta no encontrada.',
@@ -64,20 +64,20 @@ class RutaController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $this->service->actualizar($id, $request->validated());
+        $this->service->update($id, $request->validated());
 
         return response()->json([
             'status' => 'ok',
             'message' => 'Ruta actualizada correctamente.',
-            'data' => $this->service->obtener($id),
+            'data' => $this->service->find($id),
         ]);
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $ruta = $this->service->obtener($id);
+        $route = $this->service->find($id);
 
-        if (! $ruta) {
+        if (! $route) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Ruta no encontrada.',
@@ -85,7 +85,7 @@ class RutaController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $this->service->eliminar($id);
+        $this->service->delete($id);
 
         return response()->json([
             'status' => 'ok',

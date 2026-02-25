@@ -14,59 +14,59 @@ class DocumentoService extends BaseService
         parent::__construct($repository);
     }
 
-    public function porViaje(int $viajeId)
+    public function byTrip(int $viajeId)
     {
-        return $this->repository->porViaje($viajeId);
+        return $this->repository->byTrip($viajeId);
     }
 
-    public function obtener(int $id): ?Documento
+    public function find(int $id): ?Documento
     {
         return $this->repository->findWithViaje($id);
     }
 
-    public function crear(array $data, UploadedFile $archivo): Documento
+    public function create(array $data, UploadedFile $file): Documento
     {
-        $data['nombre_original'] = $archivo->getClientOriginalName();
-        $data['archivo'] = $archivo->store('documentos', 'local');
+        $data['nombre_original'] = $file->getClientOriginalName();
+        $data['archivo'] = $file->store('documentos', 'local');
 
         return $this->repository->create($data);
     }
 
-    public function actualizar(int $id, array $data, ?UploadedFile $archivo): bool
+    public function update(int $id, array $data, ?UploadedFile $file): bool
     {
-        if ($archivo) {
-            $documento = $this->repository->findById($id);
-            if ($documento?->archivo) {
-                Storage::disk('local')->delete($documento->archivo);
+        if ($file) {
+            $document = $this->repository->findById($id);
+            if ($document?->archivo) {
+                Storage::disk('local')->delete($document->archivo);
             }
-            $data['nombre_original'] = $archivo->getClientOriginalName();
-            $data['archivo'] = $archivo->store('documentos', 'local');
+            $data['nombre_original'] = $file->getClientOriginalName();
+            $data['archivo'] = $file->store('documentos', 'local');
         }
 
         return $this->repository->update($id, $data);
     }
 
-    public function eliminar(int $id): bool
+    public function delete(int $id): bool
     {
-        $documento = $this->repository->findById($id);
-        if ($documento?->archivo) {
-            Storage::disk('local')->delete($documento->archivo);
+        $document = $this->repository->findById($id);
+        if ($document?->archivo) {
+            Storage::disk('local')->delete($document->archivo);
         }
 
         return $this->repository->delete($id);
     }
 
-    public function descargar(Documento $documento)
+    public function download(Documento $document)
     {
-        return Storage::disk('local')->download($documento->archivo, $documento->nombre_original);
+        return Storage::disk('local')->download($document->archivo, $document->nombre_original);
     }
 
-    public function puedeAcceder(Documento $documento, int $camioneroId, bool $esAdmin): bool
+    public function canAccess(Documento $document, int $camioneroId, bool $isAdmin): bool
     {
-        if ($esAdmin) {
+        if ($isAdmin) {
             return true;
         }
 
-        return $documento->viaje->camionero_id === $camioneroId;
+        return $document->viaje->camionero_id === $camioneroId;
     }
 }

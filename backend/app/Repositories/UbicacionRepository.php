@@ -11,7 +11,7 @@ class UbicacionRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function ultimaPorCamionero(int $camioneroId): ?Ubicacion
+    public function latestByDriver(int $camioneroId): ?Ubicacion
     {
         return $this->model
             ->where('camionero_id', $camioneroId)
@@ -19,7 +19,7 @@ class UbicacionRepository extends BaseRepository
             ->first();
     }
 
-    public function ultimaPorViaje(int $viajeId): ?Ubicacion
+    public function latestByTrip(int $viajeId): ?Ubicacion
     {
         return $this->model
             ->where('viaje_id', $viajeId)
@@ -27,7 +27,7 @@ class UbicacionRepository extends BaseRepository
             ->first();
     }
 
-    public function historialPorViaje(int $viajeId)
+    public function historyByTrip(int $viajeId)
     {
         return $this->model
             ->where('viaje_id', $viajeId)

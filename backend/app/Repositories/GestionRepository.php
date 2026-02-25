@@ -11,7 +11,7 @@ class GestionRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function porViaje(int $viajeId)
+    public function byTrip(int $viajeId)
     {
         return $this->model->with('user:id,name')
             ->where('viaje_id', $viajeId)

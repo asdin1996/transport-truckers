@@ -12,7 +12,7 @@ class MensajeRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function conversacion(int $userId1, int $userId2): Collection
+    public function conversation(int $userId1, int $userId2): Collection
     {
         return $this->model
             ->with(['remitente', 'destinatario'])
@@ -26,7 +26,7 @@ class MensajeRepository extends BaseRepository
             ->get();
     }
 
-    public function noLeidos(int $userId): Collection
+    public function unread(int $userId): Collection
     {
         return $this->model
             ->where('para_user_id', $userId)
@@ -35,11 +35,11 @@ class MensajeRepository extends BaseRepository
             ->get();
     }
 
-    public function marcarLeidosEnConversacion(int $deUserId, int $paraUserId): int
+    public function markConversationAsRead(int $fromUserId, int $toUserId): int
     {
         return $this->model
-            ->where('de_user_id', $deUserId)
-            ->where('para_user_id', $paraUserId)
+            ->where('de_user_id', $fromUserId)
+            ->where('para_user_id', $toUserId)
             ->where('leido', false)
             ->update(['leido' => true, 'leido_at' => now()]);
     }

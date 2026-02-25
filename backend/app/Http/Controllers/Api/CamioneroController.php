@@ -18,26 +18,26 @@ class CamioneroController extends Controller
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $this->service->listar(),
+            'data'    => $this->service->getAll(),
         ]);
     }
 
     public function store(StoreCamioneroRequest $request): JsonResponse
     {
-        $camionero = $this->service->crear($request->validated());
+        $driver = $this->service->create($request->validated());
 
         return response()->json([
             'status'  => 'ok',
             'message' => 'Camionero creado correctamente.',
-            'data'    => $camionero,
+            'data'    => $driver,
         ], Response::HTTP_CREATED);
     }
 
     public function show(int $id): JsonResponse
     {
-        $camionero = $this->service->obtener($id);
+        $driver = $this->service->find($id);
 
-        if (! $camionero) {
+        if (! $driver) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Camionero no encontrado.',
@@ -48,15 +48,15 @@ class CamioneroController extends Controller
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $camionero,
+            'data'    => $driver,
         ]);
     }
 
     public function update(UpdateCamioneroRequest $request, int $id): JsonResponse
     {
-        $camionero = $this->service->obtener($id);
+        $driver = $this->service->find($id);
 
-        if (! $camionero) {
+        if (! $driver) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Camionero no encontrado.',
@@ -64,20 +64,20 @@ class CamioneroController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $this->service->actualizar($id, $request->validated());
+        $this->service->update($id, $request->validated());
 
         return response()->json([
             'status'  => 'ok',
             'message' => 'Camionero actualizado correctamente.',
-            'data'    => $this->service->obtener($id),
+            'data'    => $this->service->find($id),
         ]);
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $camionero = $this->service->obtener($id);
+        $driver = $this->service->find($id);
 
-        if (! $camionero) {
+        if (! $driver) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Camionero no encontrado.',
@@ -85,7 +85,7 @@ class CamioneroController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $this->service->eliminar($id);
+        $this->service->delete($id);
 
         return response()->json([
             'status'  => 'ok',

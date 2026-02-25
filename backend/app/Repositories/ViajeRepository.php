@@ -21,7 +21,7 @@ class ViajeRepository extends BaseRepository
         return $this->model->with(['camionero', 'vehiculo', 'ruta'])->find($id);
     }
 
-    public function porCamionero(int $camioneroId)
+    public function byDriver(int $camioneroId)
     {
         return $this->model->with(['vehiculo', 'ruta'])->where('camionero_id', $camioneroId)->get();
     }

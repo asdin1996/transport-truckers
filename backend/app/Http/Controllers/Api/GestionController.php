@@ -14,34 +14,34 @@ class GestionController extends Controller
 {
     public function __construct(private GestionService $service) {}
 
-    public function index(int $viajeId): JsonResponse
+    public function index(int $tripId): JsonResponse
     {
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $this->service->porViaje($viajeId),
+            'data'    => $this->service->byTrip($tripId),
         ]);
     }
 
-    public function store(StoreGestionRequest $request, int $viajeId): JsonResponse
+    public function store(StoreGestionRequest $request, int $tripId): JsonResponse
     {
-        $gestion = $this->service->crear(array_merge(
+        $record = $this->service->create(array_merge(
             $request->validated(),
-            ['viaje_id' => $viajeId, 'user_id' => $request->user()->id]
+            ['viaje_id' => $tripId, 'user_id' => $request->user()->id]
         ));
 
         return response()->json([
             'status'  => 'ok',
             'message' => 'Gestión creada correctamente.',
-            'data'    => $gestion->load('user:id,name'),
+            'data'    => $record->load('user:id,name'),
         ], Response::HTTP_CREATED);
     }
 
-    public function update(UpdateGestionRequest $request, int $viajeId, int $id): JsonResponse
+    public function update(UpdateGestionRequest $request, int $tripId, int $id): JsonResponse
     {
-        $gestion = $this->service->obtener($id);
+        $record = $this->service->find($id);
 
-        if (! $gestion || $gestion->viaje_id !== $viajeId) {
+        if (! $record || $record->viaje_id !== $tripId) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Gestión no encontrada.',
@@ -49,20 +49,20 @@ class GestionController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $this->service->actualizar($id, $request->validated());
+        $this->service->update($id, $request->validated());
 
         return response()->json([
             'status'  => 'ok',
             'message' => 'Gestión actualizada correctamente.',
-            'data'    => $this->service->obtener($id)->load('user:id,name'),
+            'data'    => $this->service->find($id)->load('user:id,name'),
         ]);
     }
 
-    public function destroy(int $viajeId, int $id): JsonResponse
+    public function destroy(int $tripId, int $id): JsonResponse
     {
-        $gestion = $this->service->obtener($id);
+        $record = $this->service->find($id);
 
-        if (! $gestion || $gestion->viaje_id !== $viajeId) {
+        if (! $record || $record->viaje_id !== $tripId) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Gestión no encontrada.',
@@ -70,7 +70,7 @@ class GestionController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $this->service->eliminar($id);
+        $this->service->delete($id);
 
         return response()->json([
             'status'  => 'ok',

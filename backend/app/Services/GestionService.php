@@ -11,27 +11,27 @@ class GestionService extends BaseService
         parent::__construct($repository);
     }
 
-    public function porViaje(int $viajeId)
+    public function byTrip(int $viajeId)
     {
-        return $this->repository->porViaje($viajeId);
+        return $this->repository->byTrip($viajeId);
     }
 
-    public function crear(array $data)
+    public function create(array $data)
     {
         return $this->repository->create($data);
     }
 
-    public function actualizar(int $id, array $data): bool
+    public function update(int $id, array $data): bool
     {
         return $this->repository->update($id, $data);
     }
 
-    public function obtener(int $id)
+    public function find(int $id)
     {
         return $this->repository->findById($id);
     }
 
-    public function eliminar(int $id): bool
+    public function delete(int $id): bool
     {
         return $this->repository->delete($id);
     }

@@ -64,4 +64,23 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    public function adminContact(): JsonResponse
+    {
+        $admin = \App\Models\User::where('role', 'admin')->select('id', 'name')->first();
+
+        if (! $admin) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No hay administrador disponible.',
+                'data' => null,
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => null,
+            'data' => $admin,
+        ]);
+    }
 }

@@ -12,10 +12,10 @@ class UbicacionService extends BaseService
         parent::__construct($repository);
     }
 
-    public function registrar(int $camioneroId, array $data): Ubicacion
+    public function register(int $driverId, array $data): Ubicacion
     {
         return $this->repository->create([
-            'camionero_id'  => $camioneroId,
+            'camionero_id'  => $driverId,
             'viaje_id'      => $data['viaje_id'] ?? null,
             'lat'           => $data['lat'],
             'lng'           => $data['lng'],
@@ -23,18 +23,18 @@ class UbicacionService extends BaseService
         ]);
     }
 
-    public function ultimaPorCamionero(int $camioneroId): ?Ubicacion
+    public function latestByDriver(int $driverId): ?Ubicacion
     {
-        return $this->repository->ultimaPorCamionero($camioneroId);
+        return $this->repository->latestByDriver($driverId);
     }
 
-    public function ultimaPorViaje(int $viajeId): ?Ubicacion
+    public function latestByTrip(int $viajeId): ?Ubicacion
     {
-        return $this->repository->ultimaPorViaje($viajeId);
+        return $this->repository->latestByTrip($viajeId);
     }
 
-    public function historialPorViaje(int $viajeId)
+    public function historyByTrip(int $viajeId)
     {
-        return $this->repository->historialPorViaje($viajeId);
+        return $this->repository->historyByTrip($viajeId);
     }
 }

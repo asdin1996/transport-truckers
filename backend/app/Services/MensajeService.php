@@ -13,10 +13,10 @@ class MensajeService extends BaseService
         parent::__construct($repository);
     }
 
-    public function enviar(int $deUserId, array $data): Mensaje
+    public function send(int $fromUserId, array $data): Mensaje
     {
         return $this->repository->create([
-            'de_user_id'   => $deUserId,
+            'de_user_id'   => $fromUserId,
             'para_user_id' => $data['para_user_id'],
             'contenido'    => $data['contenido'],
             'leido'        => false,
@@ -24,18 +24,18 @@ class MensajeService extends BaseService
         ]);
     }
 
-    public function conversacion(int $userId1, int $userId2): Collection
+    public function conversation(int $userId1, int $userId2): Collection
     {
-        return $this->repository->conversacion($userId1, $userId2);
+        return $this->repository->conversation($userId1, $userId2);
     }
 
-    public function noLeidos(int $userId): Collection
+    public function unread(int $userId): Collection
     {
-        return $this->repository->noLeidos($userId);
+        return $this->repository->unread($userId);
     }
 
-    public function marcarLeidosEnConversacion(int $deUserId, int $paraUserId): int
+    public function markConversationAsRead(int $fromUserId, int $toUserId): int
     {
-        return $this->repository->marcarLeidosEnConversacion($deUserId, $paraUserId);
+        return $this->repository->markConversationAsRead($fromUserId, $toUserId);
     }
 }

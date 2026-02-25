@@ -18,26 +18,26 @@ class VehiculoController extends Controller
         return response()->json([
             'status' => 'ok',
             'message' => null,
-            'data' => $this->service->listar(),
+            'data' => $this->service->getAll(),
         ]);
     }
 
     public function store(StoreVehiculoRequest $request): JsonResponse
     {
-        $vehiculo = $this->service->crear($request->validated());
+        $vehicle = $this->service->create($request->validated());
 
         return response()->json([
             'status' => 'ok',
             'message' => 'Vehículo creado correctamente.',
-            'data' => $vehiculo,
+            'data' => $vehicle,
         ], Response::HTTP_CREATED);
     }
 
     public function show(int $id): JsonResponse
     {
-        $vehiculo = $this->service->obtener($id);
+        $vehicle = $this->service->find($id);
 
-        if (! $vehiculo) {
+        if (! $vehicle) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Vehículo no encontrado.',
@@ -48,15 +48,15 @@ class VehiculoController extends Controller
         return response()->json([
             'status' => 'ok',
             'message' => null,
-            'data' => $vehiculo,
+            'data' => $vehicle,
         ]);
     }
 
     public function update(UpdateVehiculoRequest $request, int $id): JsonResponse
     {
-        $vehiculo = $this->service->obtener($id);
+        $vehicle = $this->service->find($id);
 
-        if (! $vehiculo) {
+        if (! $vehicle) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Vehículo no encontrado.',
@@ -64,20 +64,20 @@ class VehiculoController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $this->service->actualizar($id, $request->validated());
+        $this->service->update($id, $request->validated());
 
         return response()->json([
             'status' => 'ok',
             'message' => 'Vehículo actualizado correctamente.',
-            'data' => $this->service->obtener($id),
+            'data' => $this->service->find($id),
         ]);
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $vehiculo = $this->service->obtener($id);
+        $vehicle = $this->service->find($id);
 
-        if (! $vehiculo) {
+        if (! $vehicle) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Vehículo no encontrado.',
@@ -85,7 +85,7 @@ class VehiculoController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $this->service->eliminar($id);
+        $this->service->delete($id);
 
         return response()->json([
             'status' => 'ok',

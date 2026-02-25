@@ -16,36 +16,36 @@ class DocumentoController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $viajeId = $request->query('viaje_id');
+        $tripId = $request->query('viaje_id');
 
-        $documentos = $viajeId
-            ? $this->service->porViaje((int) $viajeId)
+        $documents = $tripId
+            ? $this->service->byTrip((int) $tripId)
             : collect();
 
         return response()->json([
             'status' => 'ok',
             'message' => null,
-            'data' => $documentos,
+            'data' => $documents,
         ]);
     }
 
     public function store(StoreDocumentoRequest $request): JsonResponse
     {
         $data = $request->only(['viaje_id', 'tipo', 'fecha']);
-        $documento = $this->service->crear($data, $request->file('archivo'));
+        $document = $this->service->create($data, $request->file('archivo'));
 
         return response()->json([
             'status' => 'ok',
             'message' => 'Documento subido correctamente.',
-            'data' => $this->service->obtener($documento->id),
+            'data' => $this->service->find($document->id),
         ], Response::HTTP_CREATED);
     }
 
     public function show(int $id): JsonResponse
     {
-        $documento = $this->service->obtener($id);
+        $document = $this->service->find($id);
 
-        if (! $documento) {
+        if (! $document) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Documento no encontrado.',
@@ -54,7 +54,7 @@ class DocumentoController extends Controller
         }
 
         $user = auth()->user();
-        if (! $this->service->puedeAcceder($documento, $user->camionero?->id ?? 0, $user->isAdmin())) {
+        if (! $this->service->canAccess($document, $user->camionero?->id ?? 0, $user->isAdmin())) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No tienes permiso para ver este documento.',
@@ -65,15 +65,15 @@ class DocumentoController extends Controller
         return response()->json([
             'status' => 'ok',
             'message' => null,
-            'data' => $documento,
+            'data' => $document,
         ]);
     }
 
     public function update(UpdateDocumentoRequest $request, int $id): JsonResponse
     {
-        $documento = $this->service->obtener($id);
+        $document = $this->service->find($id);
 
-        if (! $documento) {
+        if (! $document) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Documento no encontrado.',
@@ -82,7 +82,7 @@ class DocumentoController extends Controller
         }
 
         $user = auth()->user();
-        if (! $this->service->puedeAcceder($documento, $user->camionero?->id ?? 0, $user->isAdmin())) {
+        if (! $this->service->canAccess($document, $user->camionero?->id ?? 0, $user->isAdmin())) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No tienes permiso para modificar este documento.',
@@ -91,20 +91,20 @@ class DocumentoController extends Controller
         }
 
         $data = $request->only(['tipo', 'fecha']);
-        $this->service->actualizar($id, $data, $request->file('archivo'));
+        $this->service->update($id, $data, $request->file('archivo'));
 
         return response()->json([
             'status' => 'ok',
             'message' => 'Documento actualizado correctamente.',
-            'data' => $this->service->obtener($id),
+            'data' => $this->service->find($id),
         ]);
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $documento = $this->service->obtener($id);
+        $document = $this->service->find($id);
 
-        if (! $documento) {
+        if (! $document) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Documento no encontrado.',
@@ -113,7 +113,7 @@ class DocumentoController extends Controller
         }
 
         $user = auth()->user();
-        if (! $this->service->puedeAcceder($documento, $user->camionero?->id ?? 0, $user->isAdmin())) {
+        if (! $this->service->canAccess($document, $user->camionero?->id ?? 0, $user->isAdmin())) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No tienes permiso para eliminar este documento.',
@@ -121,7 +121,7 @@ class DocumentoController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $this->service->eliminar($id);
+        $this->service->delete($id);
 
         return response()->json([
             'status' => 'ok',
@@ -130,11 +130,11 @@ class DocumentoController extends Controller
         ]);
     }
 
-    public function descargar(int $id)
+    public function download(int $id)
     {
-        $documento = $this->service->obtener($id);
+        $document = $this->service->find($id);
 
-        if (! $documento) {
+        if (! $document) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Documento no encontrado.',
@@ -143,7 +143,7 @@ class DocumentoController extends Controller
         }
 
         $user = auth()->user();
-        if (! $this->service->puedeAcceder($documento, $user->camionero?->id ?? 0, $user->isAdmin())) {
+        if (! $this->service->canAccess($document, $user->camionero?->id ?? 0, $user->isAdmin())) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No tienes permiso para descargar este documento.',
@@ -151,6 +151,6 @@ class DocumentoController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        return $this->service->descargar($documento);
+        return $this->service->download($document);
     }
 }
