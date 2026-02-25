@@ -11,6 +11,8 @@ class Gestion extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'gestiones';
+
     protected $fillable = ['viaje_id', 'user_id', 'contenido'];
 
     public function viaje(): BelongsTo

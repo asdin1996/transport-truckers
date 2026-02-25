@@ -29,7 +29,7 @@ export default function Login() {
       <div className="login-card">
         <div className="login-logo">
           <span className="login-logo__icon">🚛</span>
-          <h1 className="login-logo__text">CamionApp</h1>
+          <h1 className="login-logo__text">Transporte Cubicaje</h1>
         </div>
 
         <h2 className="login-title">Iniciar sesión</h2>

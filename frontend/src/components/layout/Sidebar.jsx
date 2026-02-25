@@ -44,7 +44,7 @@ export default function Sidebar({ open, onClose, onExpand, onCollapse }) {
     >
       <div className="sidebar__logo">
         <div className="sidebar__logo-icon">🚛</div>
-        <span className="sidebar__logo-text">CamionApp</span>
+        <span className="sidebar__logo-text">Transporte Cubicaje</span>
       </div>
 
       <nav className="sidebar__nav">

@@ -12,7 +12,7 @@ const TITLES = {
 
 export default function Header({ onMenuClick }) {
   const { pathname } = useLocation()
-  const title = TITLES[pathname] ?? (pathname.startsWith('/viajes/') ? 'Detalle viaje' : 'CamionApp')
+  const title = TITLES[pathname] ?? (pathname.startsWith('/viajes/') ? 'Detalle viaje' : 'Transporte Cubicaje')
 
   return (
     <header className="header">
