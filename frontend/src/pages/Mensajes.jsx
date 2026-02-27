@@ -23,13 +23,15 @@ export default function Mensajes() {
       .catch(() => setError('No se pudieron cargar los camioneros.'))
   }, [])
 
-  // Si es camionero, el interlocutor es siempre admin (user_id = null → buscar admin)
+  // Si es camionero, el interlocutor es siempre el admin
   useEffect(() => {
     if (!isAdmin()) {
-      api.get('/me').then((r) => {
-        // Usamos un userId especial 0 para indicar "admin"
-        setSelectedUser({ id: 0, nombre: 'Administrador' })
-      })
+      api.get('/admin-contact')
+        .then((r) => {
+          const admin = r.data.data
+          setSelectedUser({ id: admin.id, nombre: admin.name })
+        })
+        .catch(() => setError('No se pudo obtener el contacto del administrador.'))
     }
   }, [])
 
@@ -55,7 +57,7 @@ export default function Mensajes() {
     if (!texto.trim() || !selectedUser) return
     setEnviando(true)
     try {
-      await sendMensaje({ receptor_id: selectedUser.id, contenido: texto.trim() })
+      await sendMensaje({ para_user_id: selectedUser.id, contenido: texto.trim() })
       setTexto('')
       cargarMensajes(selectedUser.id)
     } catch {
@@ -135,7 +137,7 @@ export default function Mensajes() {
             </p>
           )}
           {mensajes.map((m) => {
-            const esMio = m.emisor_id === user?.id
+            const esMio = m.de_user_id === user?.id
             return (
               <div key={m.id} style={{ display: 'flex', justifyContent: esMio ? 'flex-end' : 'flex-start' }}>
                 <div style={{

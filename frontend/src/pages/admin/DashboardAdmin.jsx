@@ -36,10 +36,10 @@ export default function DashboardAdmin() {
       </div>
 
       <div className="stats-row" style={{ marginBottom: 20 }}>
-        <StatCard label="Viajes en curso"    value={enCurso.length}          color="var(--color-primary)" />
-        <StatCard label="Viajes pendientes"  value={pendientes.length}        color="#ffc107" />
-        <StatCard label="Vehículos"          value={stats.vehiculos.length}   color="#42a5f5" />
-        <StatCard label="Camioneros"         value={stats.camioneros.length}  color="#66bb6a" />
+        <StatCard label="Viajes en curso"    value={enCurso.length}          color="var(--color-primary)" to="/viajes?estado=en_curso" />
+        <StatCard label="Viajes pendientes"  value={pendientes.length}        color="#ffc107"              to="/viajes?estado=pendiente" />
+        <StatCard label="Vehículos"          value={stats.vehiculos.length}   color="#42a5f5"              to="/vehiculos" />
+        <StatCard label="Camioneros"         value={stats.camioneros.length}  color="#66bb6a"              to="/camioneros" />
       </div>
 
       {/* Viajes en curso */}
@@ -111,11 +111,11 @@ export default function DashboardAdmin() {
   )
 }
 
-function StatCard({ label, value, color }) {
+function StatCard({ label, value, color, to }) {
   return (
-    <div className="stat-card">
+    <Link to={to} className="stat-card stat-card--link">
       <span className="stat-card__value" style={{ color }}>{value}</span>
       <span className="stat-card__label">{label}</span>
-    </div>
+    </Link>
   )
 }

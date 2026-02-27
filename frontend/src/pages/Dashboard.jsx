@@ -46,9 +46,9 @@ export default function Dashboard() {
       <div className="dashboard-grid">
         {/* Estadísticas */}
         <div className="stats-row">
-          <StatCard label="Viajes en curso" value={activos.length} color="var(--color-primary)" />
-          <StatCard label="Viajes pendientes" value={pendientes.length} color="#ffc107" />
-          <StatCard label="Total viajes" value={viajes.length} color="#42a5f5" />
+          <StatCard label="Viajes en curso"   value={activos.length}    color="var(--color-primary)" to="/viajes?estado=en_curso" />
+          <StatCard label="Viajes pendientes" value={pendientes.length}  color="#ffc107"              to="/viajes?estado=pendiente" />
+          <StatCard label="Total viajes"      value={viajes.length}      color="#42a5f5"              to="/viajes" />
         </div>
 
         {/* Viajes activos */}
@@ -121,13 +121,13 @@ export default function Dashboard() {
   )
 }
 
-function StatCard({ label, value, color }) {
+function StatCard({ label, value, color, to }) {
   return (
-    <div className="stat-card">
+    <Link to={to} className="stat-card stat-card--link">
       <span className="stat-card__value" style={{ color }}>
         {value}
       </span>
       <span className="stat-card__label">{label}</span>
-    </div>
+    </Link>
   )
 }
