@@ -22,13 +22,21 @@ class Viaje extends Model
         'fecha_inicio',
         'fecha_fin',
         'notas',
+        'paradas_completadas',
+        'hora_inicio',
+        'hora_fin',
+        'duracion_minutos',
     ];
 
     protected function casts(): array
     {
         return [
-            'fecha_inicio' => 'datetime',
-            'fecha_fin' => 'datetime',
+            'fecha_inicio'          => 'datetime',
+            'fecha_fin'             => 'datetime',
+            'hora_inicio'           => 'datetime',
+            'hora_fin'              => 'datetime',
+            'duracion_minutos'      => 'integer',
+            'paradas_completadas'   => 'array',
         ];
     }
 

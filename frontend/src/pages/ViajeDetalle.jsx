@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getViaje, cambiarEstado } from '../services/viajes'
+import { getViaje, cambiarEstado, updateViaje, updateParadas } from '../services/viajes'
+import TripTimeline from '../components/TripTimeline'
 import { getGestiones, createGestion, updateGestion, deleteGestion } from '../services/gestiones'
+import { getCamioneros } from '../services/camioneros'
+import { getVehiculos } from '../services/vehiculos'
+import { getRutas } from '../services/rutas'
 
 const ESTADO_LABELS = {
   pendiente:  'Pendiente',
@@ -16,9 +20,26 @@ const SIGUIENTE_ESTADO = {
   en_curso:  'completado',
 }
 
+const ACCION_LABEL = {
+  en_curso:   'Iniciar viaje',
+  completado: 'Finalizar viaje',
+}
+
+function formatDuracion(minutos) {
+  if (!minutos) return '—'
+  const h = Math.floor(minutos / 60)
+  const m = minutos % 60
+  return h > 0 ? `${h}h ${m}min` : `${m}min`
+}
+
+function formatHora(dt) {
+  if (!dt) return '—'
+  return new Date(dt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
+}
+
 export default function ViajeDetalle() {
   const { id } = useParams()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const navigate = useNavigate()
 
   const [viaje, setViaje]         = useState(null)
@@ -27,11 +48,18 @@ export default function ViajeDetalle() {
   const [error, setError]         = useState(null)
   const [accionando, setAccionando] = useState(false)
 
+  // Modal edición
+  const [editModal, setEditModal]   = useState(false)
+  const [editForm, setEditForm]     = useState({})
+  const [editOpts, setEditOpts]     = useState({ camioneros: [], vehiculos: [], rutas: [] })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError]   = useState(null)
+
   // Nueva gestión
   const [nuevoTexto, setNuevoTexto] = useState('')
   const [guardando, setGuardando]   = useState(false)
 
-  // Edición inline
+  // Edición inline gestiones
   const [editandoId, setEditandoId]     = useState(null)
   const [editTexto, setEditTexto]       = useState('')
   const [guardandoEdit, setGuardandoEdit] = useState(false)
@@ -46,6 +74,72 @@ export default function ViajeDetalle() {
       .finally(() => setLoading(false))
 
   useEffect(() => { cargar() }, [id])
+
+  const handleToggleParada = async (index) => {
+    const actuales = viaje.paradas_completadas ?? []
+    const nuevas   = actuales.includes(index)
+      ? actuales.filter((i) => i !== index)
+      : [...actuales, index].sort((a, b) => a - b)
+
+    // Actualizar estado local inmediatamente para respuesta visual rápida
+    setViaje((prev) => ({ ...prev, paradas_completadas: nuevas }))
+
+    try {
+      await updateParadas(id, nuevas)
+    } catch {
+      // Revertir si falla
+      setViaje((prev) => ({ ...prev, paradas_completadas: actuales }))
+      setError('No se pudo actualizar la parada.')
+    }
+  }
+
+  const abrirEdicion = async (v) => {
+    setEditError(null)
+    setEditForm({
+      camionero_id: v.camionero_id ?? '',
+      vehiculo_id:  v.vehiculo_id  ?? '',
+      ruta_id:      v.ruta_id      ?? '',
+      estado:       v.estado       ?? 'pendiente',
+      fecha_inicio: v.fecha_inicio ? v.fecha_inicio.slice(0, 10) : '',
+      fecha_fin:    v.fecha_fin    ? v.fecha_fin.slice(0, 10)    : '',
+      notas:        v.notas        ?? '',
+    })
+    if (isAdmin() && editOpts.camioneros.length === 0) {
+      try {
+        const [cRes, vRes, rRes] = await Promise.all([getCamioneros(), getVehiculos(), getRutas()])
+        setEditOpts({
+          camioneros: cRes.data.data ?? [],
+          vehiculos:  vRes.data.data ?? [],
+          rutas:      rRes.data.data ?? [],
+        })
+      } catch {
+        setEditError('No se pudieron cargar los datos.')
+      }
+    }
+    setEditModal(true)
+  }
+
+  const handleGuardarEdicion = async (e) => {
+    e.preventDefault()
+    setEditSaving(true)
+    setEditError(null)
+    try {
+      const payload = { ...editForm }
+      if (!payload.fecha_inicio) delete payload.fecha_inicio
+      if (!payload.fecha_fin)    delete payload.fecha_fin
+      if (!payload.notas)        delete payload.notas
+      await updateViaje(id, payload)
+      setEditModal(false)
+      await cargar()
+    } catch (err) {
+      const msgs = err.response?.data?.errors
+      setEditError(msgs ? Object.values(msgs).flat().join(' ') : 'Error al guardar.')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  const setEdit = (f) => (e) => setEditForm((prev) => ({ ...prev, [f]: e.target.value }))
 
   const handleCambiarEstado = async () => {
     const siguiente = SIGUIENTE_ESTADO[viaje.estado]
@@ -125,17 +219,36 @@ export default function ViajeDetalle() {
           </h2>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          {(isAdmin() || (viaje.estado === 'pendiente' && user?.id === viaje.camionero?.user_id)) && (
+            <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(viaje)}>
+              Editar
+            </button>
+          )}
           {siguienteEstado && (
             <button
-              className="btn btn--primary btn--sm"
+              className={`btn btn--sm ${siguienteEstado === 'completado' ? 'btn--danger' : 'btn--primary'}`}
               onClick={handleCambiarEstado}
               disabled={accionando}
             >
-              {accionando ? 'Actualizando…' : `Marcar como ${ESTADO_LABELS[siguienteEstado]}`}
+              {accionando ? 'Actualizando…' : ACCION_LABEL[siguienteEstado]}
             </button>
           )}
         </div>
       </div>
+
+      {/* Timeline de ruta */}
+      {viaje.ruta && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <TripTimeline
+            origen={viaje.ruta.origen}
+            destino={viaje.ruta.destino}
+            paradas={viaje.ruta.paradas ?? []}
+            completadas={viaje.paradas_completadas ?? []}
+            canCheck={viaje.estado === 'en_curso'}
+            onToggle={handleToggleParada}
+          />
+        </div>
+      )}
 
       {/* Info del viaje */}
       <div className="detail-grid">
@@ -152,10 +265,16 @@ export default function ViajeDetalle() {
             <dd>{viaje.vehiculo?.matricula ?? '—'} {viaje.vehiculo?.marca} {viaje.vehiculo?.modelo}</dd>
             <dt>Km estimados</dt>
             <dd>{viaje.ruta?.km_estimados ?? '—'} km</dd>
-            <dt>Fecha inicio</dt>
+            <dt>Fecha prevista inicio</dt>
             <dd>{viaje.fecha_inicio ? new Date(viaje.fecha_inicio).toLocaleDateString('es-ES') : '—'}</dd>
-            <dt>Fecha fin</dt>
+            <dt>Fecha prevista fin</dt>
             <dd>{viaje.fecha_fin ? new Date(viaje.fecha_fin).toLocaleDateString('es-ES') : '—'}</dd>
+            <dt>Inicio real</dt>
+            <dd>{formatHora(viaje.hora_inicio)}</dd>
+            <dt>Fin real</dt>
+            <dd>{formatHora(viaje.hora_fin)}</dd>
+            <dt>Duración</dt>
+            <dd>{formatDuracion(viaje.duracion_minutos)}</dd>
             <dt>Notas</dt>
             <dd>{viaje.notas ?? '—'}</dd>
           </dl>
@@ -282,6 +401,92 @@ export default function ViajeDetalle() {
           </div>
         )}
       </div>
+
+      {/* Modal edición viaje */}
+      {editModal && (
+        <div className="modal-overlay" onClick={() => setEditModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>Editar viaje</h3>
+              <button className="modal__close" onClick={() => setEditModal(false)}>✕</button>
+            </div>
+
+            {editError && <div className="alert alert--error">{editError}</div>}
+
+            <form onSubmit={handleGuardarEdicion} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {isAdmin() ? (
+                <>
+                  <div className="form-group">
+                    <label>Camionero</label>
+                    <select value={editForm.camionero_id} onChange={setEdit('camionero_id')} required>
+                      <option value="">Seleccionar…</option>
+                      {editOpts.camioneros.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre} {c.apellidos}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Vehículo</label>
+                    <select value={editForm.vehiculo_id} onChange={setEdit('vehiculo_id')}>
+                      <option value="">Sin vehículo</option>
+                      {editOpts.vehiculos.map((v) => (
+                        <option key={v.id} value={v.id}>{v.matricula} — {v.marca} {v.modelo}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Ruta</label>
+                    <select value={editForm.ruta_id} onChange={setEdit('ruta_id')}>
+                      <option value="">Sin ruta</option>
+                      {editOpts.rutas.map((r) => (
+                        <option key={r.id} value={r.id}>{r.origen} → {r.destino} ({r.km_estimados} km)</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Estado</label>
+                    <select value={editForm.estado} onChange={setEdit('estado')}>
+                      <option value="pendiente">Pendiente</option>
+                      <option value="en_curso">En curso</option>
+                      <option value="completado">Completado</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Fecha prevista inicio</label>
+                      <input type="date" value={editForm.fecha_inicio} onChange={setEdit('fecha_inicio')} />
+                    </div>
+                    <div className="form-group">
+                      <label>Fecha prevista fin</label>
+                      <input type="date" value={editForm.fecha_fin} onChange={setEdit('fecha_fin')} />
+                    </div>
+                  </div>
+                </>
+              ) : null}
+
+              <div className="form-group">
+                <label>Notas</label>
+                <textarea
+                  value={editForm.notas}
+                  onChange={setEdit('notas')}
+                  rows={3}
+                  placeholder="Instrucciones especiales…"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn--ghost" onClick={() => setEditModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn--primary" disabled={editSaving}>
+                  {editSaving ? 'Guardando…' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

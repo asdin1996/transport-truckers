@@ -5,6 +5,7 @@ namespace App\Http\Requests\Viaje;
 use App\Models\Viaje;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateViajeRequest extends FormRequest
 {
@@ -20,11 +21,12 @@ class UpdateViajeRequest extends FormRequest
     {
         return [
             'camionero_id' => ['sometimes', 'exists:camioneros,id'],
-            'vehiculo_id' => ['nullable', 'exists:vehiculos,id'],
-            'ruta_id' => ['nullable', 'exists:rutas,id'],
+            'vehiculo_id'  => ['nullable', 'exists:vehiculos,id'],
+            'ruta_id'      => ['nullable', 'exists:rutas,id'],
+            'estado'       => ['sometimes', 'in:' . implode(',', Viaje::ESTADOS)],
             'fecha_inicio' => ['nullable', 'date'],
-            'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
-            'notas' => ['nullable', 'string', 'max:1000'],
+            'fecha_fin'    => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+            'notas'        => ['nullable', 'string', 'max:1000'],
         ];
     }
 }
