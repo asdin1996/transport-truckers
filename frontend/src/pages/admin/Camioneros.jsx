@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
 import { getCamioneros, createCamionero, updateCamionero, deleteCamionero } from '../../services/camioneros'
+import Pagination from '../../components/Pagination'
+
+const PER_PAGE = 10
 
 const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', licencia: '', fecha_nacimiento: '' }
 
 export default function Camioneros() {
   const [lista, setLista] = useState([])
+  const [filtro, setFiltro] = useState('todos')
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [modal, setModal] = useState(null) // null | 'nuevo' | camionero-obj
@@ -69,6 +74,11 @@ export default function Camioneros() {
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
+  const enViaje  = lista.filter((c) => c.en_viaje)
+  const libres   = lista.filter((c) => !c.en_viaje)
+  const filtrada = filtro === 'en_viaje' ? enViaje : filtro === 'libres' ? libres : lista
+  const listFiltrada = filtrada.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+
   return (
     <div>
       <div className="page-header">
@@ -78,12 +88,25 @@ export default function Camioneros() {
 
       {error && <div className="alert alert--error">{error}</div>}
 
+      <div className="filter-tabs">
+        <button className={`filter-tab${filtro === 'todos' ? ' active' : ''}`} onClick={() => { setFiltro('todos'); setPage(1) }}>
+          Todos ({lista.length})
+        </button>
+        <button className={`filter-tab${filtro === 'libres' ? ' active' : ''}`} onClick={() => { setFiltro('libres'); setPage(1) }}>
+          Libres ({libres.length})
+        </button>
+        <button className={`filter-tab${filtro === 'en_viaje' ? ' active' : ''}`} onClick={() => { setFiltro('en_viaje'); setPage(1) }}>
+          En viaje ({enViaje.length})
+        </button>
+      </div>
+
       <div className="card">
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
                 <th>Nombre</th>
+                <th>Estado</th>
                 <th>Email</th>
                 <th>Teléfono</th>
                 <th>Licencia</th>
@@ -91,12 +114,18 @@ export default function Camioneros() {
               </tr>
             </thead>
             <tbody>
-              {lista.length === 0 && (
-                <tr><td colSpan={5} style={{ color: 'var(--color-text-muted)' }}>Sin camioneros.</td></tr>
+              {listFiltrada.length === 0 && (
+                <tr><td colSpan={6} style={{ color: 'var(--color-text-muted)' }}>Sin camioneros.</td></tr>
               )}
-              {lista.map((c) => (
+              {listFiltrada.map((c) => (
                 <tr key={c.id}>
                   <td>{c.nombre} {c.apellidos}</td>
+                  <td>
+                    {c.en_viaje
+                      ? <span className="badge badge--en_curso">En viaje</span>
+                      : <span className="badge badge--completado">Libre</span>
+                    }
+                  </td>
                   <td>{c.email}</td>
                   <td>{c.telefono ?? '—'}</td>
                   <td>{c.licencia}</td>
@@ -111,6 +140,7 @@ export default function Camioneros() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={filtrada.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
 
       {modal && (

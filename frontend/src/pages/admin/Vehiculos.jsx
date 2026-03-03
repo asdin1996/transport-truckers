@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
 import { getVehiculos, createVehiculo, updateVehiculo, deleteVehiculo } from '../../services/vehiculos'
+import Pagination from '../../components/Pagination'
+
+const PER_PAGE = 10
 
 const EMPTY = { matricula: '', marca: '', modelo: '', anio: new Date().getFullYear() }
 
 export default function Vehiculos() {
   const [lista, setLista] = useState([])
+  const [filtro, setFiltro] = useState('todos')
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [modal, setModal] = useState(null)
@@ -61,6 +66,11 @@ export default function Vehiculos() {
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
+  const enUso       = lista.filter((v) => v.en_viaje)
+  const disponibles = lista.filter((v) => !v.en_viaje)
+  const filtrada    = filtro === 'en_uso' ? enUso : filtro === 'disponible' ? disponibles : lista
+  const listFiltrada = filtrada.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+
   return (
     <div>
       <div className="page-header">
@@ -70,12 +80,25 @@ export default function Vehiculos() {
 
       {error && <div className="alert alert--error">{error}</div>}
 
+      <div className="filter-tabs">
+        <button className={`filter-tab${filtro === 'todos' ? ' active' : ''}`} onClick={() => { setFiltro('todos'); setPage(1) }}>
+          Todos ({lista.length})
+        </button>
+        <button className={`filter-tab${filtro === 'disponible' ? ' active' : ''}`} onClick={() => { setFiltro('disponible'); setPage(1) }}>
+          Disponible ({disponibles.length})
+        </button>
+        <button className={`filter-tab${filtro === 'en_uso' ? ' active' : ''}`} onClick={() => { setFiltro('en_uso'); setPage(1) }}>
+          En uso ({enUso.length})
+        </button>
+      </div>
+
       <div className="card">
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
                 <th>Matrícula</th>
+                <th>Estado</th>
                 <th>Marca</th>
                 <th>Modelo</th>
                 <th>Año</th>
@@ -83,12 +106,18 @@ export default function Vehiculos() {
               </tr>
             </thead>
             <tbody>
-              {lista.length === 0 && (
-                <tr><td colSpan={5} style={{ color: 'var(--color-text-muted)' }}>Sin vehículos.</td></tr>
+              {listFiltrada.length === 0 && (
+                <tr><td colSpan={6} style={{ color: 'var(--color-text-muted)' }}>Sin vehículos.</td></tr>
               )}
-              {lista.map((v) => (
+              {listFiltrada.map((v) => (
                 <tr key={v.id}>
                   <td>{v.matricula}</td>
+                  <td>
+                    {v.en_viaje
+                      ? <span className="badge badge--en_curso">En uso</span>
+                      : <span className="badge badge--completado">Disponible</span>
+                    }
+                  </td>
                   <td>{v.marca}</td>
                   <td>{v.modelo}</td>
                   <td>{v.anio}</td>
@@ -103,6 +132,7 @@ export default function Vehiculos() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={filtrada.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
 
       {modal && (
