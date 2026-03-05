@@ -11,6 +11,7 @@ import Camioneros from './pages/admin/Camioneros'
 import Vehiculos from './pages/admin/Vehiculos'
 import NuevoViaje from './pages/admin/NuevoViaje'
 import MapaGps from './pages/admin/MapaGps'
+import Rutas from './pages/admin/Rutas'
 import './components/layout/Layout.css'
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
               <Route path="/viajes/:id" element={<ViajeDetalle />} />
               <Route path="/camioneros" element={<Camioneros />} />
               <Route path="/vehiculos" element={<Vehiculos />} />
+              <Route path="/rutas" element={<Rutas />} />
               <Route path="/mensajes" element={<Mensajes />} />
               <Route path="/mapa" element={<MapaGps />} />
             </Route>
