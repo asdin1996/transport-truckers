@@ -1,0 +1,93 @@
+.trip-timeline {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 20px 0 8px;
+  overflow-x: auto;
+}
+
+.tl-step {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Línea horizontal entre nodos */
+.tl-line {
+  width: 40px;
+  height: 2px;
+  background: var(--color-border);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.tl-line--done {
+  background: #66bb6a;
+}
+
+/* Nodo + label */
+.tl-node-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 64px;
+}
+
+/* Círculo del nodo */
+.tl-node {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  transition: all 0.2s;
+}
+
+.tl-node--origin,
+.tl-node--dest {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+}
+
+.tl-node--done {
+  background: #66bb6a;
+  border-color: #66bb6a;
+  color: #fff;
+}
+
+.tl-node--active {
+  border-color: #42a5f5;
+  box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.25);
+  background: rgba(66, 165, 245, 0.1);
+  color: #42a5f5;
+}
+
+.tl-node--pending {
+  color: var(--color-text-muted);
+}
+
+/* Checkbox dentro del nodo */
+.tl-check {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #66bb6a;
+}
+
+/* Etiqueta bajo el nodo */
+.tl-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: center;
+  max-width: 72px;
+  word-break: break-word;
+  line-height: 1.3;
+}
