@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react'
 import { getVehiculos, createVehiculo, updateVehiculo, deleteVehiculo } from '../../services/vehiculos'
 import Pagination from '../../components/Pagination'
+import useTableFilter from '../../hooks/useTableFilter'
 
 const PER_PAGE = 10
 
 const EMPTY = { matricula: '', marca: '', modelo: '', anio: new Date().getFullYear() }
+
+const SEARCH_FIELDS = ['matricula', 'marca', 'modelo', 'anio']
+
+function SortIcon({ col, sort }) {
+  const active = sort.col === col
+  return (
+    <span className={`sort-icon${active ? ' sort-icon--active' : ''}`}>
+      {active ? (sort.dir === 'asc' ? '▲' : '▼') : '▲▼'}
+    </span>
+  )
+}
 
 export default function Vehiculos() {
   const [lista, setLista] = useState([])
@@ -24,6 +36,18 @@ export default function Vehiculos() {
       .finally(() => setLoading(false))
 
   useEffect(() => { cargar() }, [])
+
+  const enUso       = lista.filter((v) => v.en_viaje)
+  const disponibles = lista.filter((v) => !v.en_viaje)
+  const base        = filtro === 'en_uso' ? enUso : filtro === 'disponible' ? disponibles : lista
+
+  const { query, setQuery, sort, toggleSort, processed } = useTableFilter(base, SEARCH_FIELDS)
+
+  const doSearch = (q) => { setQuery(q); setPage(1) }
+  const doSort   = (col) => { toggleSort(col); setPage(1) }
+  const doFiltro = (f) => { setFiltro(f); setPage(1) }
+
+  const listPaginada = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   const abrirNuevo = () => { setForm(EMPTY); setFormError(null); setModal('nuevo') }
   const abrirEditar = (v) => {
@@ -66,11 +90,6 @@ export default function Vehiculos() {
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
-  const enUso       = lista.filter((v) => v.en_viaje)
-  const disponibles = lista.filter((v) => !v.en_viaje)
-  const filtrada    = filtro === 'en_uso' ? enUso : filtro === 'disponible' ? disponibles : lista
-  const listFiltrada = filtrada.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-
   return (
     <div>
       <div className="page-header">
@@ -81,35 +100,54 @@ export default function Vehiculos() {
       {error && <div className="alert alert--error">{error}</div>}
 
       <div className="filter-tabs">
-        <button className={`filter-tab${filtro === 'todos' ? ' active' : ''}`} onClick={() => { setFiltro('todos'); setPage(1) }}>
+        <button className={`filter-tab${filtro === 'todos' ? ' active' : ''}`} onClick={() => doFiltro('todos')}>
           Todos ({lista.length})
         </button>
-        <button className={`filter-tab${filtro === 'disponible' ? ' active' : ''}`} onClick={() => { setFiltro('disponible'); setPage(1) }}>
+        <button className={`filter-tab${filtro === 'disponible' ? ' active' : ''}`} onClick={() => doFiltro('disponible')}>
           Disponible ({disponibles.length})
         </button>
-        <button className={`filter-tab${filtro === 'en_uso' ? ' active' : ''}`} onClick={() => { setFiltro('en_uso'); setPage(1) }}>
+        <button className={`filter-tab${filtro === 'en_uso' ? ' active' : ''}`} onClick={() => doFiltro('en_uso')}>
           En uso ({enUso.length})
         </button>
       </div>
 
       <div className="card">
+        <div className="table-controls">
+          <div className="table-search">
+            <span className="table-search__icon">⌕</span>
+            <input
+              value={query}
+              onChange={(e) => doSearch(e.target.value)}
+              placeholder="Buscar por matrícula, marca, modelo…"
+            />
+          </div>
+        </div>
+
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Matrícula</th>
+                <th className="th--sortable" onClick={() => doSort('matricula')}>
+                  Matrícula <SortIcon col="matricula" sort={sort} />
+                </th>
                 <th>Estado</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Año</th>
+                <th className="th--sortable" onClick={() => doSort('marca')}>
+                  Marca <SortIcon col="marca" sort={sort} />
+                </th>
+                <th className="th--sortable" onClick={() => doSort('modelo')}>
+                  Modelo <SortIcon col="modelo" sort={sort} />
+                </th>
+                <th className="th--sortable" onClick={() => doSort('anio')}>
+                  Año <SortIcon col="anio" sort={sort} />
+                </th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {listFiltrada.length === 0 && (
-                <tr><td colSpan={6} style={{ color: 'var(--color-text-muted)' }}>Sin vehículos.</td></tr>
+              {listPaginada.length === 0 && (
+                <tr><td colSpan={6} style={{ color: 'var(--color-text-muted)' }}>Sin resultados.</td></tr>
               )}
-              {listFiltrada.map((v) => (
+              {listPaginada.map((v) => (
                 <tr key={v.id}>
                   <td>{v.matricula}</td>
                   <td>
@@ -132,7 +170,7 @@ export default function Vehiculos() {
             </tbody>
           </table>
         </div>
-        <Pagination page={page} total={filtrada.length} perPage={PER_PAGE} onChange={setPage} />
+        <Pagination page={page} total={processed.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
 
       {modal && (

@@ -392,6 +392,71 @@ tbody tr:hover td { background: var(--color-surface2); }
 
 .modal__close:hover { background: var(--color-surface2); color: var(--color-text); }
 
+/* ── Table controls (search bar) ──────────────────────────── */
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.table-search {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+  max-width: 340px;
+}
+
+.table-search__icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.table-search input {
+  width: 100%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 7px 12px 7px 30px;
+  color: var(--color-text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.table-search input:focus { border-color: var(--color-primary); }
+
+.table-search input::placeholder { color: var(--color-text-muted); }
+
+/* ── Sortable column headers ───────────────────────────────── */
+thead th.th--sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+thead th.th--sortable:hover { color: var(--color-text); }
+
+.sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 9px;
+  opacity: 0.35;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.sort-icon--active {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
 /* ── Form row (2 columns) ──────────────────────────────────── */
 .form-row {
   display: grid;

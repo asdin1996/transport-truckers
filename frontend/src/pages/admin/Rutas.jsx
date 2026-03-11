@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react'
 import { getRutas, createRuta, updateRuta, deleteRuta } from '../../services/rutas'
 import Pagination from '../../components/Pagination'
+import useTableFilter from '../../hooks/useTableFilter'
 
 const PER_PAGE = 10
 const EMPTY = { origen: '', destino: '', km_estimados: '', paradas: '' }
 
+const SEARCH_FIELDS = ['origen', 'destino']
+
+function SortIcon({ col, sort }) {
+  const active = sort.col === col
+  return (
+    <span className={`sort-icon${active ? ' sort-icon--active' : ''}`}>
+      {active ? (sort.dir === 'asc' ? '▲' : '▼') : '▲▼'}
+    </span>
+  )
+}
+
 export default function Rutas() {
-  const [lista, setLista]       = useState([])
-  const [page, setPage]         = useState(1)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
-  const [modal, setModal]       = useState(null) // null | 'nuevo' | ruta-obj
-  const [form, setForm]         = useState(EMPTY)
-  const [saving, setSaving]     = useState(false)
+  const [lista, setLista]         = useState([])
+  const [page, setPage]           = useState(1)
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(null)
+  const [modal, setModal]         = useState(null)
+  const [form, setForm]           = useState(EMPTY)
+  const [saving, setSaving]       = useState(false)
   const [formError, setFormError] = useState(null)
 
   const cargar = () =>
@@ -23,18 +35,21 @@ export default function Rutas() {
 
   useEffect(() => { cargar() }, [])
 
-  const abrirNuevo = () => {
-    setForm(EMPTY)
-    setFormError(null)
-    setModal('nuevo')
-  }
+  const { query, setQuery, sort, toggleSort, processed } = useTableFilter(lista, SEARCH_FIELDS)
+
+  const doSearch = (q) => { setQuery(q); setPage(1) }
+  const doSort   = (col) => { toggleSort(col); setPage(1) }
+
+  const listPaginada = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+
+  const abrirNuevo = () => { setForm(EMPTY); setFormError(null); setModal('nuevo') }
 
   const abrirEditar = (r) => {
     setForm({
-      origen:        r.origen ?? '',
-      destino:       r.destino ?? '',
-      km_estimados:  r.km_estimados ?? '',
-      paradas:       Array.isArray(r.paradas) ? r.paradas.join(', ') : '',
+      origen:       r.origen ?? '',
+      destino:      r.destino ?? '',
+      km_estimados: r.km_estimados ?? '',
+      paradas:      Array.isArray(r.paradas) ? r.paradas.join(', ') : '',
     })
     setFormError(null)
     setModal(r)
@@ -83,8 +98,6 @@ export default function Rutas() {
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
-  const paginated = lista.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-
   return (
     <div>
       <div className="page-header">
@@ -95,22 +108,39 @@ export default function Rutas() {
       {error && <div className="alert alert--error">{error}</div>}
 
       <div className="card">
+        <div className="table-controls">
+          <div className="table-search">
+            <span className="table-search__icon">⌕</span>
+            <input
+              value={query}
+              onChange={(e) => doSearch(e.target.value)}
+              placeholder="Buscar por origen o destino…"
+            />
+          </div>
+        </div>
+
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Origen</th>
-                <th>Destino</th>
-                <th>Km estimados</th>
+                <th className="th--sortable" onClick={() => doSort('origen')}>
+                  Origen <SortIcon col="origen" sort={sort} />
+                </th>
+                <th className="th--sortable" onClick={() => doSort('destino')}>
+                  Destino <SortIcon col="destino" sort={sort} />
+                </th>
+                <th className="th--sortable" onClick={() => doSort('km_estimados')}>
+                  Km estimados <SortIcon col="km_estimados" sort={sort} />
+                </th>
                 <th>Paradas</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {paginated.length === 0 && (
-                <tr><td colSpan={5} style={{ color: 'var(--color-text-muted)' }}>Sin rutas.</td></tr>
+              {listPaginada.length === 0 && (
+                <tr><td colSpan={5} style={{ color: 'var(--color-text-muted)' }}>Sin resultados.</td></tr>
               )}
-              {paginated.map((r) => (
+              {listPaginada.map((r) => (
                 <tr key={r.id}>
                   <td>{r.origen}</td>
                   <td>{r.destino}</td>
@@ -131,7 +161,7 @@ export default function Rutas() {
             </tbody>
           </table>
         </div>
-        <Pagination page={page} total={lista.length} perPage={PER_PAGE} onChange={setPage} />
+        <Pagination page={page} total={processed.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
 
       {modal && (

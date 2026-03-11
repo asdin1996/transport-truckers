@@ -1,10 +1,31 @@
 import { useEffect, useState } from 'react'
 import { getCamioneros, createCamionero, updateCamionero, deleteCamionero } from '../../services/camioneros'
 import Pagination from '../../components/Pagination'
+import useTableFilter from '../../hooks/useTableFilter'
 
 const PER_PAGE = 10
 
-const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', licencia: '', fecha_nacimiento: '' }
+const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', dni: '', fecha_nacimiento: '' }
+
+const SEARCH_FIELDS = [
+  (c) => `${c.nombre} ${c.apellidos}`,
+  'email',
+  'dni',
+  'telefono',
+]
+
+const SORT_GETTERS = {
+  nombre: (c) => `${c.nombre} ${c.apellidos}`,
+}
+
+function SortIcon({ col, sort }) {
+  const active = sort.col === col
+  return (
+    <span className={`sort-icon${active ? ' sort-icon--active' : ''}`}>
+      {active ? (sort.dir === 'asc' ? '▲' : '▼') : '▲▼'}
+    </span>
+  )
+}
 
 export default function Camioneros() {
   const [lista, setLista] = useState([])
@@ -12,7 +33,7 @@ export default function Camioneros() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [modal, setModal] = useState(null) // null | 'nuevo' | camionero-obj
+  const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState(null)
@@ -25,6 +46,18 @@ export default function Camioneros() {
 
   useEffect(() => { cargar() }, [])
 
+  const enViaje = lista.filter((c) => c.en_viaje)
+  const libres  = lista.filter((c) => !c.en_viaje)
+  const base    = filtro === 'en_viaje' ? enViaje : filtro === 'libres' ? libres : lista
+
+  const { query, setQuery, sort, toggleSort, processed } = useTableFilter(base, SEARCH_FIELDS, SORT_GETTERS)
+
+  const doSearch  = (q) => { setQuery(q); setPage(1) }
+  const doSort    = (col) => { toggleSort(col); setPage(1) }
+  const doFiltro  = (f) => { setFiltro(f); setPage(1) }
+
+  const listPaginada = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+
   const abrirNuevo = () => { setForm(EMPTY); setFormError(null); setModal('nuevo') }
   const abrirEditar = (c) => {
     setForm({
@@ -32,14 +65,13 @@ export default function Camioneros() {
       apellidos: c.apellidos,
       email: c.email,
       telefono: c.telefono ?? '',
-      licencia: c.licencia,
+      dni: c.dni,
       fecha_nacimiento: c.fecha_nacimiento ?? '',
     })
     setFormError(null)
     setModal(c)
   }
   const cerrar = () => setModal(null)
-
   const set = (f) => (e) => setForm((prev) => ({ ...prev, [f]: e.target.value }))
 
   const guardar = async (e) => {
@@ -74,11 +106,6 @@ export default function Camioneros() {
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
-  const enViaje  = lista.filter((c) => c.en_viaje)
-  const libres   = lista.filter((c) => !c.en_viaje)
-  const filtrada = filtro === 'en_viaje' ? enViaje : filtro === 'libres' ? libres : lista
-  const listFiltrada = filtrada.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-
   return (
     <div>
       <div className="page-header">
@@ -89,35 +116,52 @@ export default function Camioneros() {
       {error && <div className="alert alert--error">{error}</div>}
 
       <div className="filter-tabs">
-        <button className={`filter-tab${filtro === 'todos' ? ' active' : ''}`} onClick={() => { setFiltro('todos'); setPage(1) }}>
+        <button className={`filter-tab${filtro === 'todos' ? ' active' : ''}`} onClick={() => doFiltro('todos')}>
           Todos ({lista.length})
         </button>
-        <button className={`filter-tab${filtro === 'libres' ? ' active' : ''}`} onClick={() => { setFiltro('libres'); setPage(1) }}>
+        <button className={`filter-tab${filtro === 'libres' ? ' active' : ''}`} onClick={() => doFiltro('libres')}>
           Libres ({libres.length})
         </button>
-        <button className={`filter-tab${filtro === 'en_viaje' ? ' active' : ''}`} onClick={() => { setFiltro('en_viaje'); setPage(1) }}>
+        <button className={`filter-tab${filtro === 'en_viaje' ? ' active' : ''}`} onClick={() => doFiltro('en_viaje')}>
           En viaje ({enViaje.length})
         </button>
       </div>
 
       <div className="card">
+        <div className="table-controls">
+          <div className="table-search">
+            <span className="table-search__icon">⌕</span>
+            <input
+              value={query}
+              onChange={(e) => doSearch(e.target.value)}
+              placeholder="Buscar por nombre, email, DNI…"
+            />
+          </div>
+        </div>
+
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Nombre</th>
+                <th className="th--sortable" onClick={() => doSort('nombre')}>
+                  Nombre <SortIcon col="nombre" sort={sort} />
+                </th>
                 <th>Estado</th>
-                <th>Email</th>
+                <th className="th--sortable" onClick={() => doSort('email')}>
+                  Email <SortIcon col="email" sort={sort} />
+                </th>
                 <th>Teléfono</th>
-                <th>Licencia</th>
+                <th className="th--sortable" onClick={() => doSort('dni')}>
+                  DNI <SortIcon col="dni" sort={sort} />
+                </th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {listFiltrada.length === 0 && (
-                <tr><td colSpan={6} style={{ color: 'var(--color-text-muted)' }}>Sin camioneros.</td></tr>
+              {listPaginada.length === 0 && (
+                <tr><td colSpan={6} style={{ color: 'var(--color-text-muted)' }}>Sin resultados.</td></tr>
               )}
-              {listFiltrada.map((c) => (
+              {listPaginada.map((c) => (
                 <tr key={c.id}>
                   <td>{c.nombre} {c.apellidos}</td>
                   <td>
@@ -128,7 +172,7 @@ export default function Camioneros() {
                   </td>
                   <td>{c.email}</td>
                   <td>{c.telefono ?? '—'}</td>
-                  <td>{c.licencia}</td>
+                  <td>{c.dni}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn--ghost btn--sm" onClick={() => abrirEditar(c)}>Editar</button>
@@ -140,7 +184,7 @@ export default function Camioneros() {
             </tbody>
           </table>
         </div>
-        <Pagination page={page} total={filtrada.length} perPage={PER_PAGE} onChange={setPage} />
+        <Pagination page={page} total={processed.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
 
       {modal && (
@@ -172,8 +216,8 @@ export default function Camioneros() {
                   <input value={form.telefono} onChange={set('telefono')} />
                 </div>
                 <div className="form-group">
-                  <label>Licencia</label>
-                  <input value={form.licencia} onChange={set('licencia')} required />
+                  <label>DNI</label>
+                  <input value={form.dni} onChange={set('dni')} required />
                 </div>
               </div>
               <div className="form-group">

@@ -6,6 +6,7 @@ import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
 import { getRutas } from '../services/rutas'
 import Pagination from '../components/Pagination'
+import useTableFilter from '../hooks/useTableFilter'
 
 const PER_PAGE = 10
 
@@ -14,6 +15,29 @@ const ESTADO_LABELS = {
   en_curso:   'En curso',
   completado: 'Completado',
   cancelado:  'Cancelado',
+}
+
+const SEARCH_FIELDS = [
+  (v) => `${v.camionero?.nombre ?? ''} ${v.camionero?.apellidos ?? ''}`,
+  (v) => `${v.ruta?.origen ?? ''} ${v.ruta?.destino ?? ''}`,
+  (v) => v.vehiculo?.matricula ?? '',
+  'estado',
+]
+
+const SORT_GETTERS = {
+  camionero:   (v) => `${v.camionero?.nombre ?? ''} ${v.camionero?.apellidos ?? ''}`,
+  ruta:        (v) => `${v.ruta?.origen ?? ''} → ${v.ruta?.destino ?? ''}`,
+  fecha_inicio:(v) => v.fecha_inicio ?? '',
+  fecha_fin:   (v) => v.fecha_fin ?? '',
+}
+
+function SortIcon({ col, sort }) {
+  const active = sort.col === col
+  return (
+    <span className={`sort-icon${active ? ' sort-icon--active' : ''}`}>
+      {active ? (sort.dir === 'asc' ? '▲' : '▼') : '▲▼'}
+    </span>
+  )
 }
 
 export default function Viajes() {
@@ -29,15 +53,9 @@ export default function Viajes() {
   const [editModal, setEditModal]   = useState(false)
   const [editViaje, setEditViaje]   = useState(null)
   const [editForm, setEditForm]     = useState({})
-  const [editOpts, setEditOpts]     = useState(null) // null = sin cargar
+  const [editOpts, setEditOpts]     = useState(null)
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError]   = useState(null)
-
-  const cambiarFiltro = (estado) => {
-    setFiltro(estado)
-    setPage(1)
-    setSearchParams(estado === 'todos' ? {} : { estado })
-  }
 
   const cargar = () =>
     getViajes()
@@ -47,8 +65,20 @@ export default function Viajes() {
 
   useEffect(() => { cargar() }, [])
 
-  const filtrada = filtro === 'todos' ? viajes : viajes.filter((v) => v.estado === filtro)
-  const lista = filtrada.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  const base = filtro === 'todos' ? viajes : viajes.filter((v) => v.estado === filtro)
+
+  const { query, setQuery, sort, toggleSort, processed } = useTableFilter(base, SEARCH_FIELDS, SORT_GETTERS)
+
+  const cambiarFiltro = (estado) => {
+    setFiltro(estado)
+    setPage(1)
+    setSearchParams(estado === 'todos' ? {} : { estado })
+  }
+
+  const doSearch = (q) => { setQuery(q); setPage(1) }
+  const doSort   = (col) => { toggleSort(col); setPage(1) }
+
+  const lista = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   // ── Edición ──────────────────────────────────────────────────
   const abrirEdicion = async (v) => {
@@ -130,6 +160,17 @@ export default function Viajes() {
       </div>
 
       <div className="card">
+        <div className="table-controls">
+          <div className="table-search">
+            <span className="table-search__icon">⌕</span>
+            <input
+              value={query}
+              onChange={(e) => doSearch(e.target.value)}
+              placeholder="Buscar por camionero, ruta, matrícula…"
+            />
+          </div>
+        </div>
+
         {lista.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No hay viajes.</p>
         ) : (
@@ -137,12 +178,24 @@ export default function Viajes() {
             <table>
               <thead>
                 <tr>
-                  {isAdmin() && <th>Camionero</th>}
-                  <th>Ruta</th>
+                  {isAdmin() && (
+                    <th className="th--sortable" onClick={() => doSort('camionero')}>
+                      Camionero <SortIcon col="camionero" sort={sort} />
+                    </th>
+                  )}
+                  <th className="th--sortable" onClick={() => doSort('ruta')}>
+                    Ruta <SortIcon col="ruta" sort={sort} />
+                  </th>
                   <th>Vehículo</th>
-                  <th>Estado</th>
-                  <th>Inicio</th>
-                  <th>Fin</th>
+                  <th className="th--sortable" onClick={() => doSort('estado')}>
+                    Estado <SortIcon col="estado" sort={sort} />
+                  </th>
+                  <th className="th--sortable" onClick={() => doSort('fecha_inicio')}>
+                    Inicio <SortIcon col="fecha_inicio" sort={sort} />
+                  </th>
+                  <th className="th--sortable" onClick={() => doSort('fecha_fin')}>
+                    Fin <SortIcon col="fecha_fin" sort={sort} />
+                  </th>
                   <th></th>
                 </tr>
               </thead>
@@ -175,7 +228,7 @@ export default function Viajes() {
                 ))}
               </tbody>
             </table>
-          <Pagination page={page} total={filtrada.length} perPage={PER_PAGE} onChange={setPage} />
+            <Pagination page={page} total={processed.length} perPage={PER_PAGE} onChange={setPage} />
           </div>
         )}
       </div>

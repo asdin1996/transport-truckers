@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -8,8 +8,8 @@ import * as caminerosService from '../../services/camioneros'
 import * as authService from '../../services/auth'
 
 const CAMIONEROS = [
-  { id: 1, nombre: 'Juan', apellidos: 'García', email: 'juan@test.com', telefono: '600000001', licencia: 'C+E' },
-  { id: 2, nombre: 'Pedro', apellidos: 'López', email: 'pedro@test.com', telefono: null, licencia: 'C' },
+  { id: 1, nombre: 'Juan', apellidos: 'García', email: 'juan@test.com', telefono: '600000001', dni: '12345678A' },
+  { id: 2, nombre: 'Pedro', apellidos: 'López', email: 'pedro@test.com', telefono: null, dni: '87654321B' },
 ]
 
 beforeEach(() => {
@@ -66,11 +66,12 @@ test('crea un camionero y recarga la lista', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: /nuevo camionero/i }))
 
-  const inputs = screen.getAllByRole('textbox')
-  await userEvent.type(inputs[0], 'Ana')
-  await userEvent.type(inputs[1], 'Martínez')
-  await userEvent.type(inputs[2], 'ana@test.com')
-  await userEvent.type(inputs[4], 'B+E')
+  const modal = screen.getByText('Nuevo camionero').closest('.modal')
+  const inputs = within(modal).getAllByRole('textbox')
+  await userEvent.type(inputs[0], 'Ana')       // Nombre
+  await userEvent.type(inputs[1], 'Martínez')  // Apellidos
+  await userEvent.type(inputs[2], 'ana@test.com') // Email
+  await userEvent.type(inputs[4], '12345678A') // DNI
 
   await userEvent.click(screen.getByRole('button', { name: /guardar/i }))
 
