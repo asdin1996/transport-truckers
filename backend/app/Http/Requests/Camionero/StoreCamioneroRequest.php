@@ -14,12 +14,11 @@ class StoreCamioneroRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id'          => ['required', 'exists:users,id'],
             'nombre'           => ['required', 'string', 'max:100'],
             'apellidos'        => ['required', 'string', 'max:150'],
-            'email'            => ['required', 'email', 'max:255', 'unique:camioneros,email'],
+            'email'            => ['required', 'email', 'max:255', 'unique:camioneros,email', 'unique:users,email'],
             'telefono'         => ['nullable', 'string', 'max:20'],
-            'licencia'         => ['required', 'string', 'max:20', 'unique:camioneros,licencia'],
+            'dni'              => ['required', 'string', 'max:20', 'unique:camioneros,dni'],
             'fecha_nacimiento' => ['required', 'date'],
         ];
     }

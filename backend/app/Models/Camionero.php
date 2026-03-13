@@ -18,7 +18,7 @@ class Camionero extends Model
         'apellidos',
         'email',
         'telefono',
-        'licencia',
+        'dni',
         'fecha_nacimiento',
     ];
 

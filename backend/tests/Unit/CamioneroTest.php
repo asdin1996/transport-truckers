@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Models\Camionero;
-use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -15,7 +14,7 @@ class CamioneroTest extends TestCase
         $camionero = new Camionero();
 
         $this->assertEquals(
-            ['user_id', 'nombre', 'apellidos', 'email', 'telefono', 'licencia', 'fecha_nacimiento'],
+            ['user_id', 'nombre', 'apellidos', 'email', 'telefono', 'dni', 'fecha_nacimiento'],
             $camionero->getFillable()
         );
     }

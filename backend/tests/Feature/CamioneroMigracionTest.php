@@ -18,18 +18,18 @@ class CamioneroMigracionTest extends TestCase
         $user = User::factory()->create(['role' => 'camionero']);
 
         $camionero = Camionero::create([
-            'user_id' => $user->id,
-            'nombre' => 'Juan',
-            'apellidos' => 'García López',
-            'email' => 'juan@example.com',
-            'telefono' => '600123456',
-            'licencia' => 'B-1234567890',
+            'user_id'          => $user->id,
+            'nombre'           => 'Juan',
+            'apellidos'        => 'García López',
+            'email'            => 'juan@example.com',
+            'telefono'         => '600123456',
+            'dni'              => '12345678A',
             'fecha_nacimiento' => '1985-06-15',
         ]);
 
         $this->assertDatabaseHas('camioneros', [
             'email' => 'juan@example.com',
-            'licencia' => 'B-1234567890',
+            'dni'   => '12345678A',
         ]);
         $this->assertEquals('Juan', $camionero->nombre);
     }
@@ -78,14 +78,14 @@ class CamioneroMigracionTest extends TestCase
     }
 
     #[Test]
-    public function licencia_es_unica(): void
+    public function dni_es_unico(): void
     {
         $this->expectException(\Illuminate\Database\QueryException::class);
 
         $user1 = User::factory()->create(['role' => 'camionero']);
         $user2 = User::factory()->create(['role' => 'camionero']);
 
-        Camionero::factory()->create(['user_id' => $user1->id, 'licencia' => 'LIC-DUPLICADA']);
-        Camionero::factory()->create(['user_id' => $user2->id, 'licencia' => 'LIC-DUPLICADA']);
+        Camionero::factory()->create(['user_id' => $user1->id, 'dni' => '12345678A']);
+        Camionero::factory()->create(['user_id' => $user2->id, 'dni' => '12345678A']);
     }
 }

@@ -18,9 +18,9 @@ class UpdateCamioneroRequest extends FormRequest
         return [
             'nombre'           => ['sometimes', 'string', 'max:100'],
             'apellidos'        => ['sometimes', 'string', 'max:150'],
-            'email'            => ['sometimes', 'email', 'max:255', 'unique:camioneros,email,' . $id],
+            'email'            => ['sometimes', 'email', 'max:255', 'unique:camioneros,email,' . $id, 'unique:users,email'],
             'telefono'         => ['nullable', 'string', 'max:20'],
-            'licencia'         => ['sometimes', 'string', 'max:20', 'unique:camioneros,licencia,' . $id],
+            'dni'              => ['sometimes', 'string', 'max:20', 'unique:camioneros,dni,' . $id],
             'fecha_nacimiento' => ['sometimes', 'date'],
         ];
     }
