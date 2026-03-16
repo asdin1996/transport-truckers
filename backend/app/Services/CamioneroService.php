@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Hash;
 
 class CamioneroService extends BaseService
 {
-    protected CamioneroRepository $repository;
+    /** @var CamioneroRepository */
+    protected $repository;
 
     public function __construct(CamioneroRepository $repository)
     {

@@ -6,7 +6,8 @@ use App\Repositories\BaseRepository;
 
 abstract class BaseService
 {
-    protected BaseRepository $repository;
+    /** @var BaseRepository */
+    protected $repository;
 
     public function __construct(BaseRepository $repository)
     {
