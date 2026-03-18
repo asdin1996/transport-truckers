@@ -23,6 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::get('/admin-contact', [AuthController::class, 'adminContact']);
+    Route::get('/contactos', [AuthController::class, 'contactos']);
 
     // Camioneros — solo admin
     Route::apiResource('camioneros', CamioneroController::class);

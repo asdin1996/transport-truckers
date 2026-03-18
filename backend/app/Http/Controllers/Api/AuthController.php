@@ -65,6 +65,26 @@ class AuthController extends Controller
         ]);
     }
 
+    public function contactos(): JsonResponse
+    {
+        $contactos = \App\Models\User::where('id', '!=', auth()->id())
+            ->with('camionero')
+            ->get()
+            ->map(fn ($u) => [
+                'id'     => $u->id,
+                'nombre' => $u->camionero
+                    ? "{$u->camionero->nombre} {$u->camionero->apellidos}"
+                    : $u->name,
+                'role'   => $u->role,
+            ]);
+
+        return response()->json([
+            'status'  => 'ok',
+            'message' => null,
+            'data'    => $contactos,
+        ]);
+    }
+
     public function adminContact(): JsonResponse
     {
         $admin = \App\Models\User::where('role', 'admin')->select('id', 'name')->first();

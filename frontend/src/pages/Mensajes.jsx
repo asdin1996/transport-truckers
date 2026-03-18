@@ -4,35 +4,21 @@ import { getMensajesConversacion, sendMensaje, marcarLeidos } from '../services/
 import api from '../services/api'
 
 export default function Mensajes() {
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
 
-  // Admin: selecciona camionero; camionero: habla con admin
-  const [camioneros, setCamioneros]       = useState([])
-  const [selectedUser, setSelectedUser]   = useState(null)
-  const [mensajes, setMensajes]           = useState([])
-  const [texto, setTexto]                 = useState('')
-  const [enviando, setEnviando]           = useState(false)
-  const [error, setError]                 = useState(null)
+  const [contactos, setContactos]       = useState([])
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [mensajes, setMensajes]         = useState([])
+  const [texto, setTexto]               = useState('')
+  const [enviando, setEnviando]         = useState(false)
+  const [error, setError]               = useState(null)
+  const [busqueda, setBusqueda]         = useState('')
   const bottomRef = useRef(null)
 
-  // Cargar lista de camioneros (solo admin)
   useEffect(() => {
-    if (!isAdmin()) return
-    api.get('/camioneros')
-      .then((r) => setCamioneros(r.data.data ?? []))
-      .catch(() => setError('No se pudieron cargar los camioneros.'))
-  }, [])
-
-  // Si es camionero, el interlocutor es siempre el admin
-  useEffect(() => {
-    if (!isAdmin()) {
-      api.get('/admin-contact')
-        .then((r) => {
-          const admin = r.data.data
-          setSelectedUser({ id: admin.id, nombre: admin.name })
-        })
-        .catch(() => setError('No se pudo obtener el contacto del administrador.'))
-    }
+    api.get('/contactos')
+      .then((r) => setContactos(r.data.data ?? []))
+      .catch(() => setError('No se pudieron cargar los contactos.'))
   }, [])
 
   const cargarMensajes = (interlocutorId) => {
@@ -67,51 +53,72 @@ export default function Mensajes() {
     }
   }
 
+  const contactosFiltrados = busqueda.trim()
+    ? contactos.filter((c) => c.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+    : contactos
+
   return (
     <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 120px)' }}>
 
-      {/* Panel izquierdo: lista de camioneros (solo admin) */}
-      {isAdmin() && (
-        <div style={{
-          width: 220,
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          flexShrink: 0,
-        }}>
-          <p style={{ padding: '12px 14px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid var(--color-border)' }}>
-            Camioneros
-          </p>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {camioneros.length === 0 && (
-              <p style={{ padding: 14, color: 'var(--color-text-muted)', fontSize: 13 }}>Sin camioneros.</p>
-            )}
-            {camioneros.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setSelectedUser({ id: c.user_id, nombre: `${c.nombre} ${c.apellidos}` })}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: selectedUser?.id === c.user_id ? 'rgba(186,53,52,0.12)' : 'transparent',
-                  border: 'none',
-                  borderLeft: selectedUser?.id === c.user_id ? '3px solid var(--color-primary)' : '3px solid transparent',
-                  color: selectedUser?.id === c.user_id ? 'var(--color-primary)' : 'var(--color-text)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontSize: 13,
-                  transition: 'background 0.15s',
-                }}
-              >
-                {c.nombre} {c.apellidos}
-              </button>
-            ))}
+      {/* Panel izquierdo: lista de contactos */}
+      <div style={{
+        width: 240,
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 8,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}>
+        <p style={{ padding: '12px 14px', fontWeight: 600, fontSize: 13, borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+          Contactos
+        </p>
+
+        {/* Buscador de contactos */}
+        <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+          <div className="table-search" style={{ maxWidth: '100%' }}>
+            <span className="table-search__icon">⌕</span>
+            <input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar…"
+            />
           </div>
         </div>
-      )}
+
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {contactosFiltrados.length === 0 && (
+            <p style={{ padding: 14, color: 'var(--color-text-muted)', fontSize: 13 }}>Sin contactos.</p>
+          )}
+          {contactosFiltrados.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedUser(c)}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                background: selectedUser?.id === c.id ? 'rgba(186,53,52,0.12)' : 'transparent',
+                border: 'none',
+                borderLeft: selectedUser?.id === c.id ? '3px solid var(--color-primary)' : '3px solid transparent',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background 0.15s',
+              }}
+            >
+              <div style={{ fontSize: 13, color: selectedUser?.id === c.id ? 'var(--color-primary)' : 'var(--color-text)', fontWeight: 500 }}>
+                {c.nombre}
+              </div>
+              <div style={{ fontSize: 11, marginTop: 2 }}>
+                {c.role === 'admin'
+                  ? <span className="badge badge--admin">Admin</span>
+                  : <span className="badge badge--camionero">Camionero</span>
+                }
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Panel derecho: conversación */}
       <div style={{
@@ -125,7 +132,7 @@ export default function Mensajes() {
       }}>
         {/* Cabecera */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', fontWeight: 600, fontSize: 13 }}>
-          {selectedUser ? `Conversación con ${selectedUser.nombre}` : 'Selecciona un camionero'}
+          {selectedUser ? `Conversación con ${selectedUser.nombre}` : 'Selecciona un contacto'}
         </div>
 
         {/* Mensajes */}
@@ -133,7 +140,7 @@ export default function Mensajes() {
           {error && <div className="alert alert--error">{error}</div>}
           {!selectedUser && (
             <p style={{ color: 'var(--color-text-muted)', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
-              {isAdmin() ? 'Selecciona un camionero para ver la conversación.' : 'Cargando…'}
+              Selecciona un contacto para ver la conversación.
             </p>
           )}
           {mensajes.map((m) => {
@@ -148,6 +155,11 @@ export default function Mensajes() {
                   padding: '8px 12px',
                   fontSize: 13,
                 }}>
+                  {!esMio && (
+                    <p style={{ fontSize: 11, fontWeight: 600, marginBottom: 4, opacity: 0.7 }}>
+                      {m.remitente?.name ?? selectedUser?.nombre}
+                    </p>
+                  )}
                   <p style={{ marginBottom: 4 }}>{m.contenido}</p>
                   <p style={{ fontSize: 10, opacity: 0.7, textAlign: 'right' }}>
                     {new Date(m.created_at).toLocaleString('es-ES', { timeStyle: 'short', dateStyle: 'short' })}
@@ -163,18 +175,13 @@ export default function Mensajes() {
         {selectedUser && (
           <form
             onSubmit={handleEnviar}
-            style={{
-              display: 'flex',
-              gap: 8,
-              padding: '12px 16px',
-              borderTop: '1px solid var(--color-border)',
-            }}
+            style={{ display: 'flex', gap: 8, padding: '12px 16px', borderTop: '1px solid var(--color-border)' }}
           >
             <input
               type="text"
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
-              placeholder="Escribe un mensaje…"
+              placeholder={`Mensaje a ${selectedUser.nombre}…`}
               style={{
                 flex: 1,
                 background: 'var(--color-surface2)',
@@ -183,6 +190,7 @@ export default function Mensajes() {
                 color: 'var(--color-text)',
                 padding: '8px 12px',
                 fontSize: 13,
+                outline: 'none',
               }}
             />
             <button
