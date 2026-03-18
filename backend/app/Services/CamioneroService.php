@@ -32,10 +32,13 @@ class CamioneroService extends BaseService
             'name'     => $data['nombre'] . ' ' . $data['apellidos'],
             'email'    => $data['email'],
             'password' => Hash::make($data['dni']),
-            'role'     => 'camionero',
+            'role'     => $data['rol'] ?? 'camionero',
         ]);
 
-        return $this->repository->create(array_merge($data, ['user_id' => $user->id]));
+        return $this->repository->create(array_merge(
+            array_diff_key($data, ['rol' => null]),
+            ['user_id' => $user->id]
+        ));
     }
 
     public function update(int $id, array $data): bool
@@ -59,12 +62,16 @@ class CamioneroService extends BaseService
                 $userUpdates['password'] = Hash::make($data['dni']);
             }
 
+            if (isset($data['rol'])) {
+                $userUpdates['role'] = $data['rol'];
+            }
+
             if ($userUpdates) {
                 $camionero->user->update($userUpdates);
             }
         }
 
-        return $this->repository->update($id, $data);
+        return $this->repository->update($id, array_diff_key($data, ['rol' => null]));
     }
 
     public function delete(int $id): bool

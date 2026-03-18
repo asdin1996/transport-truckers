@@ -20,6 +20,7 @@ class StoreCamioneroRequest extends FormRequest
             'telefono'         => ['nullable', 'string', 'max:20'],
             'dni'              => ['required', 'string', 'max:20', 'unique:camioneros,dni'],
             'fecha_nacimiento' => ['required', 'date'],
+            'rol'              => ['required', 'in:admin,camionero'],
         ];
     }
 }

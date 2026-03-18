@@ -5,7 +5,7 @@ import useTableFilter from '../../hooks/useTableFilter'
 
 const PER_PAGE = 10
 
-const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', dni: '', fecha_nacimiento: '' }
+const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', dni: '', fecha_nacimiento: '', rol: 'camionero' }
 
 const SEARCH_FIELDS = [
   (c) => `${c.nombre} ${c.apellidos}`,
@@ -67,6 +67,7 @@ export default function Camioneros() {
       telefono: c.telefono ?? '',
       dni: c.dni,
       fecha_nacimiento: c.fecha_nacimiento ?? '',
+      rol: c.user?.role ?? 'camionero',
     })
     setFormError(null)
     setModal(c)
@@ -146,6 +147,7 @@ export default function Camioneros() {
                 <th className="th--sortable" onClick={() => doSort('nombre')}>
                   Nombre <SortIcon col="nombre" sort={sort} />
                 </th>
+                <th>Rol</th>
                 <th>Estado</th>
                 <th className="th--sortable" onClick={() => doSort('email')}>
                   Email <SortIcon col="email" sort={sort} />
@@ -164,6 +166,12 @@ export default function Camioneros() {
               {listPaginada.map((c) => (
                 <tr key={c.id}>
                   <td>{c.nombre} {c.apellidos}</td>
+                  <td>
+                    {c.user?.role === 'admin'
+                      ? <span className="badge badge--admin">Admin</span>
+                      : <span className="badge badge--camionero">Camionero</span>
+                    }
+                  </td>
                   <td>
                     {c.en_viaje
                       ? <span className="badge badge--en_curso">En viaje</span>
@@ -220,9 +228,18 @@ export default function Camioneros() {
                   <input value={form.dni} onChange={set('dni')} required />
                 </div>
               </div>
-              <div className="form-group">
-                <label>Fecha de nacimiento</label>
-                <input type="date" value={form.fecha_nacimiento} onChange={set('fecha_nacimiento')} />
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Fecha de nacimiento</label>
+                  <input type="date" value={form.fecha_nacimiento} onChange={set('fecha_nacimiento')} />
+                </div>
+                <div className="form-group">
+                  <label>Rol</label>
+                  <select value={form.rol} onChange={set('rol')}>
+                    <option value="camionero">Camionero</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn--ghost" onClick={cerrar}>Cancelar</button>

@@ -203,6 +203,8 @@ tbody tr:hover td { background: var(--color-surface2); }
 .badge--en_curso   { background: rgba(33,150,243,0.15); color: #42a5f5; }
 .badge--completado { background: rgba(76,175,80,0.15);  color: #66bb6a; }
 .badge--cancelado  { background: rgba(244,67,54,0.15);  color: #ef5350; }
+.badge--admin      { background: rgba(186,53,52,0.15);  color: #e57373; }
+.badge--camionero  { background: rgba(120,120,120,0.15); color: #aaa; }
 
 /* ── Page header ───────────────────────────────────────────── */
 .page-header {

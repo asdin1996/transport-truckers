@@ -59,7 +59,7 @@ class CamioneroSeeder extends Seeder
                 'name'     => $data['nombre'] . ' ' . $data['apellidos'],
                 'email'    => $data['email'],
                 'password' => Hash::make($data['dni']),
-                'role'     => 'camionero',
+                'role'     => $data['rol'] ?? 'camionero',
             ]);
 
             Camionero::create(array_merge($data, ['user_id' => $user->id]));

@@ -22,6 +22,7 @@ class UpdateCamioneroRequest extends FormRequest
             'telefono'         => ['nullable', 'string', 'max:20'],
             'dni'              => ['sometimes', 'string', 'max:20', 'unique:camioneros,dni,' . $id],
             'fecha_nacimiento' => ['sometimes', 'date'],
+            'rol'              => ['sometimes', 'in:admin,camionero'],
         ];
     }
 }
