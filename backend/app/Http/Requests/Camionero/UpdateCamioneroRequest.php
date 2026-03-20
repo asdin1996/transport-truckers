@@ -13,12 +13,13 @@ class UpdateCamioneroRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('camionero');
+        $id     = $this->route('camionero');
+        $userId = \App\Models\Camionero::find($id)?->user_id;
 
         return [
             'nombre'           => ['sometimes', 'string', 'max:100'],
             'apellidos'        => ['sometimes', 'string', 'max:150'],
-            'email'            => ['sometimes', 'email', 'max:255', 'unique:camioneros,email,' . $id, 'unique:users,email'],
+            'email'            => ['sometimes', 'email', 'max:255', 'unique:camioneros,email,' . $id, 'unique:users,email,' . $userId],
             'telefono'         => ['nullable', 'string', 'max:20'],
             'dni'              => ['sometimes', 'string', 'max:20', 'unique:camioneros,dni,' . $id],
             'fecha_nacimiento' => ['sometimes', 'date'],
