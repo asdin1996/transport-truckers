@@ -66,7 +66,7 @@ export default function Camioneros() {
       email: c.email,
       telefono: c.telefono ?? '',
       dni: c.dni,
-      fecha_nacimiento: c.fecha_nacimiento ?? '',
+      fecha_nacimiento: c.fecha_nacimiento ? c.fecha_nacimiento.slice(0, 10) : '',
       rol: c.user?.role ?? 'camionero',
     })
     setFormError(null)

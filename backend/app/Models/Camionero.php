@@ -25,7 +25,7 @@ class Camionero extends Model
     protected function casts(): array
     {
         return [
-            'fecha_nacimiento' => 'date',
+            'fecha_nacimiento' => 'date:Y-m-d',
         ];
     }
 
