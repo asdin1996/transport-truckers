@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useMensajes } from '../context/MensajesContext'
 import { getMensajesConversacion, sendMensaje, marcarLeidos } from '../services/mensajes'
 import api from '../services/api'
 
 export default function Mensajes() {
   const { user } = useAuth()
+  const { porUsuario, refresh: refreshNoLeidos } = useMensajes()
 
   const [contactos, setContactos]       = useState([])
   const [selectedUser, setSelectedUser] = useState(null)
@@ -25,7 +27,9 @@ export default function Mensajes() {
     getMensajesConversacion(interlocutorId)
       .then((r) => {
         setMensajes(r.data.data ?? [])
-        marcarLeidos(interlocutorId).catch(() => {})
+        marcarLeidos(interlocutorId)
+          .then(() => refreshNoLeidos())
+          .catch(() => {})
       })
       .catch(() => setError('Error al cargar mensajes.'))
   }
@@ -53,9 +57,15 @@ export default function Mensajes() {
     }
   }
 
-  const contactosFiltrados = busqueda.trim()
+  const contactosFiltrados = (busqueda.trim()
     ? contactos.filter((c) => c.nombre.toLowerCase().includes(busqueda.toLowerCase()))
     : contactos
+  ).slice().sort((a, b) => {
+    const ua = porUsuario[a.id] ?? 0
+    const ub = porUsuario[b.id] ?? 0
+    if (ub !== ua) return ub - ua          // más no-leídos primero
+    return a.nombre.localeCompare(b.nombre, 'es')
+  })
 
   return (
     <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 120px)' }}>
@@ -106,8 +116,28 @@ export default function Mensajes() {
                 transition: 'background 0.15s',
               }}
             >
-              <div style={{ fontSize: 13, color: selectedUser?.id === c.id ? 'var(--color-primary)' : 'var(--color-text)', fontWeight: 500 }}>
-                {c.nombre}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                <span style={{ fontSize: 13, color: selectedUser?.id === c.id ? 'var(--color-primary)' : 'var(--color-text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {c.nombre}
+                </span>
+                {(porUsuario[c.id] ?? 0) > 0 && (
+                  <span style={{
+                    background: 'var(--color-primary)',
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px',
+                    flexShrink: 0,
+                  }}>
+                    {porUsuario[c.id] > 99 ? '99+' : porUsuario[c.id]}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: 11, marginTop: 2 }}>
                 {c.role === 'admin'

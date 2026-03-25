@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useMensajes } from '../../context/MensajesContext'
 
 const NAV_ADMIN = [
   {
@@ -15,7 +16,7 @@ const NAV_ADMIN = [
   {
     section: 'Comunicación',
     links: [
-      { to: '/mensajes', icon: '💬', label: 'Mensajes' },
+      { to: '/mensajes', icon: '💬', label: 'Mensajes', badge: true },
       { to: '/mapa', icon: '🗾', label: 'Mapa GPS' },
     ],
   },
@@ -27,13 +28,14 @@ const NAV_CAMIONERO = [
     links: [
       { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
       { to: '/viajes', icon: '🗺', label: 'Mis Viajes' },
-      { to: '/mensajes', icon: '💬', label: 'Mensajes' },
+      { to: '/mensajes', icon: '💬', label: 'Mensajes', badge: true },
     ],
   },
 ]
 
 export default function Sidebar({ open, onClose, onExpand, onCollapse }) {
   const { user, logout, isAdmin } = useAuth()
+  const { total } = useMensajes()
   const nav = isAdmin() ? NAV_ADMIN : NAV_CAMIONERO
   const initials = user?.name?.slice(0, 2).toUpperCase() ?? '??'
 
@@ -60,7 +62,12 @@ export default function Sidebar({ open, onClose, onExpand, onCollapse }) {
                 className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
                 onClick={onClose}
               >
-                <span className="nav-link__icon">{link.icon}</span>
+                <span className="nav-link__icon">
+                  {link.icon}
+                  {link.badge && total > 0 && (
+                    <span className="nav-badge">{total > 99 ? '99+' : total}</span>
+                  )}
+                </span>
                 <span className="nav-link__label">{link.label}</span>
               </NavLink>
             ))}
