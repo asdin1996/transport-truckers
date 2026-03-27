@@ -34,6 +34,11 @@ class MensajeService extends BaseService
         return $this->repository->unread($userId);
     }
 
+    public function resumen(int $userId): \Illuminate\Support\Collection
+    {
+        return $this->repository->resumen($userId);
+    }
+
     public function markConversationAsRead(int $fromUserId, int $toUserId): int
     {
         return $this->repository->markConversationAsRead($fromUserId, $toUserId);

@@ -6,7 +6,7 @@ import api from '../services/api'
 
 export default function Mensajes() {
   const { user } = useAuth()
-  const { porUsuario, refresh: refreshNoLeidos } = useMensajes()
+  const { resumen, refresh: refreshNoLeidos } = useMensajes()
 
   const [contactos, setContactos]       = useState([])
   const [selectedUser, setSelectedUser] = useState(null)
@@ -61,9 +61,14 @@ export default function Mensajes() {
     ? contactos.filter((c) => c.nombre.toLowerCase().includes(busqueda.toLowerCase()))
     : contactos
   ).slice().sort((a, b) => {
-    const ua = porUsuario[a.id] ?? 0
-    const ub = porUsuario[b.id] ?? 0
-    if (ub !== ua) return ub - ua          // más no-leídos primero
+    const ra = resumen[a.id]
+    const rb = resumen[b.id]
+    // Con conversación antes que sin conversación
+    if (ra && !rb) return -1
+    if (!ra && rb) return 1
+    // Ambos con conversación: más reciente primero
+    if (ra && rb) return new Date(rb.ultimo_mensaje_at) - new Date(ra.ultimo_mensaje_at)
+    // Ambos sin conversación: alfabético
     return a.nombre.localeCompare(b.nombre, 'es')
   })
 
@@ -120,7 +125,7 @@ export default function Mensajes() {
                 <span style={{ fontSize: 13, color: selectedUser?.id === c.id ? 'var(--color-primary)' : 'var(--color-text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {c.nombre}
                 </span>
-                {(porUsuario[c.id] ?? 0) > 0 && (
+                {(resumen[c.id]?.no_leidos ?? 0) > 0 && (
                   <span style={{
                     background: 'var(--color-primary)',
                     color: '#fff',
@@ -135,7 +140,7 @@ export default function Mensajes() {
                     padding: '0 4px',
                     flexShrink: 0,
                   }}>
-                    {porUsuario[c.id] > 99 ? '99+' : porUsuario[c.id]}
+                    {resumen[c.id].no_leidos > 99 ? '99+' : resumen[c.id].no_leidos}
                   </span>
                 )}
               </div>

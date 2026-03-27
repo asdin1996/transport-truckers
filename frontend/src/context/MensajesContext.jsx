@@ -1,22 +1,26 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { getMensajesNoLeidos } from '../services/mensajes'
+import { getResumenMensajes } from '../services/mensajes'
 import { useAuth } from './AuthContext'
 
-const MensajesContext = createContext({ total: 0, porUsuario: {}, refresh: () => {} })
+// resumen: { [contactId]: { no_leidos, ultimo_mensaje_at } }
+const MensajesContext = createContext({ total: 0, resumen: {}, refresh: () => {} })
 
 export function MensajesProvider({ children }) {
   const { user } = useAuth()
-  const [porUsuario, setPorUsuario] = useState({})
+  const [resumen, setResumen] = useState({})
 
   const refresh = useCallback(() => {
     if (!user) return
-    getMensajesNoLeidos()
+    getResumenMensajes()
       .then((r) => {
-        const counts = {}
-        ;(r.data.data ?? []).forEach((m) => {
-          counts[m.de_user_id] = (counts[m.de_user_id] ?? 0) + 1
+        const map = {}
+        ;(r.data.data ?? []).forEach((item) => {
+          map[item.contact_id] = {
+            no_leidos:         item.no_leidos,
+            ultimo_mensaje_at: item.ultimo_mensaje_at,
+          }
         })
-        setPorUsuario(counts)
+        setResumen(map)
       })
       .catch(() => {})
   }, [user])
@@ -27,10 +31,10 @@ export function MensajesProvider({ children }) {
     return () => clearInterval(id)
   }, [refresh])
 
-  const total = Object.values(porUsuario).reduce((a, b) => a + b, 0)
+  const total = Object.values(resumen).reduce((acc, v) => acc + (v.no_leidos ?? 0), 0)
 
   return (
-    <MensajesContext.Provider value={{ total, porUsuario, refresh }}>
+    <MensajesContext.Provider value={{ total, resumen, refresh }}>
       {children}
     </MensajesContext.Provider>
   )

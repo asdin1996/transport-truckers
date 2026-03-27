@@ -35,6 +35,22 @@ class MensajeRepository extends BaseRepository
             ->get();
     }
 
+    public function resumen(int $userId): Collection
+    {
+        return $this->model
+            ->selectRaw('
+                IF(de_user_id = ?, para_user_id, de_user_id) AS contact_id,
+                MAX(created_at) AS ultimo_mensaje_at,
+                SUM(CASE WHEN para_user_id = ? AND leido = 0 THEN 1 ELSE 0 END) AS no_leidos
+            ', [$userId, $userId])
+            ->where(function ($q) use ($userId) {
+                $q->where('de_user_id', $userId)->orWhere('para_user_id', $userId);
+            })
+            ->groupByRaw('IF(de_user_id = ?, para_user_id, de_user_id)', [$userId])
+            ->orderByDesc('ultimo_mensaje_at')
+            ->get();
+    }
+
     public function markConversationAsRead(int $fromUserId, int $toUserId): int
     {
         return $this->model

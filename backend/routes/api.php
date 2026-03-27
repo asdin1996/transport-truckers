@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Mensajes
     Route::post('mensajes', [MensajeController::class, 'store']);
+    Route::get('mensajes/resumen', [MensajeController::class, 'resumen']);
     Route::get('mensajes/no-leidos', [MensajeController::class, 'unread']);
     Route::get('mensajes/conversacion/{userId}', [MensajeController::class, 'conversation']);
     Route::patch('mensajes/leidos/{userId}', [MensajeController::class, 'markAsRead']);

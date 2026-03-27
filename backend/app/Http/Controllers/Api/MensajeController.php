@@ -46,6 +46,15 @@ class MensajeController extends Controller
         ]);
     }
 
+    public function resumen(): JsonResponse
+    {
+        return response()->json([
+            'status'  => 'ok',
+            'message' => null,
+            'data'    => $this->service->resumen(auth()->id()),
+        ]);
+    }
+
     public function markAsRead(int $userId): JsonResponse
     {
         $updated = $this->service->markConversationAsRead($userId, auth()->id());
