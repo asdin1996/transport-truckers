@@ -16,7 +16,7 @@ export function MensajesProvider({ children }) {
         const map = {}
         ;(r.data.data ?? []).forEach((item) => {
           map[item.contact_id] = {
-            no_leidos:         item.no_leidos,
+            no_leidos:         Number(item.no_leidos) || 0,
             ultimo_mensaje_at: item.ultimo_mensaje_at,
           }
         })

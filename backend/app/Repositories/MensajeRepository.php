@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Mensaje;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class MensajeRepository extends BaseRepository
 {
@@ -37,18 +38,27 @@ class MensajeRepository extends BaseRepository
 
     public function resumen(int $userId): Collection
     {
-        return $this->model
-            ->selectRaw('
-                IF(de_user_id = ?, para_user_id, de_user_id) AS contact_id,
-                MAX(created_at) AS ultimo_mensaje_at,
-                SUM(CASE WHEN para_user_id = ? AND leido = 0 THEN 1 ELSE 0 END) AS no_leidos
-            ', [$userId, $userId])
-            ->where(function ($q) use ($userId) {
-                $q->where('de_user_id', $userId)->orWhere('para_user_id', $userId);
-            })
-            ->groupByRaw('IF(de_user_id = ?, para_user_id, de_user_id)', [$userId])
-            ->orderByDesc('ultimo_mensaje_at')
-            ->get();
+        $rows = DB::select("
+            SELECT contact_id,
+                   MAX(created_at)                         AS ultimo_mensaje_at,
+                   CAST(SUM(no_leidos_flag) AS UNSIGNED)   AS no_leidos
+            FROM (
+                SELECT
+                    IF(de_user_id = ?, para_user_id, de_user_id) AS contact_id,
+                    created_at,
+                    CASE WHEN para_user_id = ? AND leido = 0 THEN 1 ELSE 0 END AS no_leidos_flag
+                FROM mensajes
+                WHERE de_user_id = ? OR para_user_id = ?
+            ) sub
+            GROUP BY contact_id
+            ORDER BY ultimo_mensaje_at DESC
+        ", [$userId, $userId, $userId, $userId]);
+
+        return collect($rows)->map(fn ($row) => [
+            'contact_id'        => (int) $row->contact_id,
+            'ultimo_mensaje_at' => $row->ultimo_mensaje_at,
+            'no_leidos'         => (int) $row->no_leidos,
+        ]);
     }
 
     public function markConversationAsRead(int $fromUserId, int $toUserId): int
