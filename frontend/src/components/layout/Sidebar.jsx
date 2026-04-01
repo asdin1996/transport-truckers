@@ -9,15 +9,14 @@ const NAV_ADMIN = [
       { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
       { to: '/camioneros', icon: '👤', label: 'Camioneros' },
       { to: '/vehiculos', icon: '🚛', label: 'Vehículos' },
-      { to: '/viajes', icon: '🗺', label: 'Viajes' },
       { to: '/rutas',  icon: '📍', label: 'Rutas' },
+      { to: '/viajes', icon: '🗺', label: 'Viajes' },
     ],
   },
   {
     section: 'Comunicación',
     links: [
       { to: '/mensajes', icon: '💬', label: 'Mensajes', badge: true },
-      { to: '/mapa', icon: '🗾', label: 'Mapa GPS' },
     ],
   },
 ]
