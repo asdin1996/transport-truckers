@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Camionero;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCamioneroRequest extends FormRequest
 {
@@ -16,11 +17,35 @@ class StoreCamioneroRequest extends FormRequest
         return [
             'nombre'           => ['required', 'string', 'max:100'],
             'apellidos'        => ['required', 'string', 'max:150'],
-            'email'            => ['required', 'email', 'max:255', 'unique:camioneros,email', 'unique:users,email'],
+            'email'            => [
+                'required', 'email', 'max:255',
+                Rule::unique('camioneros', 'email')->whereNull('deleted_at'),
+                Rule::unique('users', 'email'),
+            ],
             'telefono'         => ['nullable', 'string', 'max:20'],
-            'dni'              => ['required', 'string', 'max:20', 'unique:camioneros,dni'],
+            'dni'              => [
+                'required', 'string', 'max:20',
+                Rule::unique('camioneros', 'dni')->whereNull('deleted_at'),
+            ],
             'fecha_nacimiento' => ['required', 'date'],
             'rol'              => ['required', 'in:admin,camionero'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nombre.required'    => 'El nombre es obligatorio.',
+            'apellidos.required' => 'Los apellidos son obligatorios.',
+            'email.required'     => 'El email es obligatorio.',
+            'email.email'        => 'El email no tiene un formato válido.',
+            'email.unique'       => 'Este email ya está registrado.',
+            'dni.required'       => 'El DNI es obligatorio.',
+            'dni.unique'         => 'Este DNI ya está registrado.',
+            'fecha_nacimiento.required' => 'La fecha de nacimiento es obligatoria.',
+            'fecha_nacimiento.date'     => 'La fecha de nacimiento no es válida.',
+            'rol.required'       => 'El rol es obligatorio.',
+            'rol.in'             => 'El rol debe ser admin o camionero.',
         ];
     }
 }
