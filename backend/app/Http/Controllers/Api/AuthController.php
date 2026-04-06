@@ -28,10 +28,11 @@ class AuthController extends Controller
             'message' => 'Login correcto.',
             'data' => [
                 'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
+                    'id'           => $user->id,
+                    'name'         => $user->name,
+                    'email'        => $user->email,
+                    'role'         => $user->role,
+                    'camionero_id' => $user->camionero?->id,
                 ],
                 'token' => $token,
             ],
@@ -57,10 +58,11 @@ class AuthController extends Controller
             'status' => 'ok',
             'message' => null,
             'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
+                'id'           => $user->id,
+                'name'         => $user->name,
+                'email'        => $user->email,
+                'role'         => $user->role,
+                'camionero_id' => $user->camionero?->id,
             ],
         ]);
     }
