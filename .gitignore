@@ -22,6 +22,7 @@ backend/.phpunit.cache/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+frontend/.env.local
 frontend/.env.*.local
 
 # ── IDEs y editores ────────────────────────────────────────────
@@ -40,3 +41,4 @@ Thumbs.db
 
 
 # ── Archivos de documentación interna ─────────────────────────
+sql/*
