@@ -31,8 +31,8 @@ class Viaje extends Model
     protected function casts(): array
     {
         return [
-            'fecha_inicio'          => 'datetime',
-            'fecha_fin'             => 'datetime',
+            'fecha_inicio'          => 'date:Y-m-d',
+            'fecha_fin'             => 'date:Y-m-d',
             'hora_inicio'           => 'datetime',
             'hora_fin'              => 'datetime',
             'duracion_minutos'      => 'integer',

@@ -74,7 +74,7 @@ export default function Dashboard() {
                         {v.ruta?.origen ?? '—'} → {v.ruta?.destino ?? '—'}
                       </td>
                       <td>{v.vehiculo?.matricula ?? '—'}</td>
-                      <td>{v.fecha_inicio ? new Date(v.fecha_inicio).toLocaleDateString('es-ES') : '—'}</td>
+                      <td>{v.fecha_inicio ? new Date(v.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</td>
                       <td>
                         <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">
                           Ver
@@ -108,7 +108,7 @@ export default function Dashboard() {
                     <tr key={g.id}>
                       <td style={{ textTransform: 'capitalize' }}>{g.tipo}</td>
                       <td>{parseFloat(g.importe).toFixed(2)} €</td>
-                      <td>{g.fecha ? new Date(g.fecha).toLocaleDateString('es-ES') : '—'}</td>
+                      <td>{g.fecha ? new Date(g.fecha + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

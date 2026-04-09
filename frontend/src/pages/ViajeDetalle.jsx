@@ -266,9 +266,9 @@ export default function ViajeDetalle() {
             <dt>Km estimados</dt>
             <dd>{viaje.ruta?.km_estimados ?? '—'} km</dd>
             <dt>Fecha prevista inicio</dt>
-            <dd>{viaje.fecha_inicio ? new Date(viaje.fecha_inicio).toLocaleDateString('es-ES') : '—'}</dd>
+            <dd>{viaje.fecha_inicio ? new Date(viaje.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</dd>
             <dt>Fecha prevista fin</dt>
-            <dd>{viaje.fecha_fin ? new Date(viaje.fecha_fin).toLocaleDateString('es-ES') : '—'}</dd>
+            <dd>{viaje.fecha_fin ? new Date(viaje.fecha_fin + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</dd>
             <dt>Inicio real</dt>
             <dd>{formatHora(viaje.hora_inicio)}</dd>
             <dt>Fin real</dt>
@@ -322,7 +322,7 @@ export default function ViajeDetalle() {
           <button
             type="submit"
             className="btn btn--primary btn--sm"
-            disabled={guardando || !nuevoTexto.trim()}
+            disabled={guardando || (viaje.estado !== 'en_curso' && !nuevoTexto.trim())}
             style={{ alignSelf: 'flex-end' }}
           >
             {guardando ? '…' : 'Añadir'}

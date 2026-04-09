@@ -13,7 +13,9 @@ class ViajeRepository extends BaseRepository
 
     public function allWithRelations()
     {
-        return $this->model->with(['camionero', 'vehiculo', 'ruta'])->get();
+        return $this->model->with(['camionero', 'vehiculo', 'ruta'])
+            ->orderByRaw('fecha_inicio IS NULL, fecha_inicio DESC')
+            ->get();
     }
 
     public function findWithRelations(int $id): ?Viaje
@@ -23,6 +25,9 @@ class ViajeRepository extends BaseRepository
 
     public function byDriver(int $camioneroId)
     {
-        return $this->model->with(['vehiculo', 'ruta'])->where('camionero_id', $camioneroId)->get();
+        return $this->model->with(['vehiculo', 'ruta'])
+            ->where('camionero_id', $camioneroId)
+            ->orderByRaw('fecha_inicio IS NULL, fecha_inicio DESC')
+            ->get();
     }
 }
