@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Viaje extends Model
@@ -17,7 +18,9 @@ class Viaje extends Model
     protected $fillable = [
         'camionero_id',
         'vehiculo_id',
-        'ruta_id',
+        'tipo',
+        'origen',
+        'destino',
         'estado',
         'fecha_inicio',
         'fecha_fin',
@@ -27,6 +30,8 @@ class Viaje extends Model
         'hora_fin',
         'duracion_minutos',
     ];
+
+    const TIPOS = ['carga', 'descarga'];
 
     protected function casts(): array
     {
@@ -48,11 +53,6 @@ class Viaje extends Model
     public function vehiculo(): BelongsTo
     {
         return $this->belongsTo(Vehiculo::class);
-    }
-
-    public function ruta(): BelongsTo
-    {
-        return $this->belongsTo(Ruta::class);
     }
 
     public function gastos(): HasMany

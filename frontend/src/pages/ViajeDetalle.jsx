@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getViaje, cambiarEstado, updateViaje, updateParadas } from '../services/viajes'
-import TripTimeline from '../components/TripTimeline'
+import { getViaje, cambiarEstado, updateViaje } from '../services/viajes'
 import { getGestiones, createGestion, updateGestion, deleteGestion } from '../services/gestiones'
 import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
-import { getRutas } from '../services/rutas'
+import { getParadas } from '../services/paradas'
 
 const ESTADO_LABELS = {
   pendiente:  'Pendiente',
@@ -42,26 +41,23 @@ export default function ViajeDetalle() {
   const { user, isAdmin } = useAuth()
   const navigate = useNavigate()
 
-  const [viaje, setViaje]         = useState(null)
-  const [gestiones, setGestiones] = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
+  const [viaje, setViaje]           = useState(null)
+  const [gestiones, setGestiones]   = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(null)
   const [accionando, setAccionando] = useState(false)
 
-  // Modal edición
   const [editModal, setEditModal]   = useState(false)
   const [editForm, setEditForm]     = useState({})
-  const [editOpts, setEditOpts]     = useState({ camioneros: [], vehiculos: [], rutas: [] })
+  const [editOpts, setEditOpts]     = useState({ camioneros: [], vehiculos: [], paradas: [] })
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError]   = useState(null)
 
-  // Nueva gestión
   const [nuevoTexto, setNuevoTexto] = useState('')
   const [guardando, setGuardando]   = useState(false)
 
-  // Edición inline gestiones
-  const [editandoId, setEditandoId]     = useState(null)
-  const [editTexto, setEditTexto]       = useState('')
+  const [editandoId, setEditandoId]       = useState(null)
+  const [editTexto, setEditTexto]         = useState('')
   const [guardandoEdit, setGuardandoEdit] = useState(false)
 
   const cargar = () =>
@@ -75,30 +71,14 @@ export default function ViajeDetalle() {
 
   useEffect(() => { cargar() }, [id])
 
-  const handleToggleParada = async (index) => {
-    const actuales = viaje.paradas_completadas ?? []
-    const nuevas   = actuales.includes(index)
-      ? actuales.filter((i) => i !== index)
-      : [...actuales, index].sort((a, b) => a - b)
-
-    // Actualizar estado local inmediatamente para respuesta visual rápida
-    setViaje((prev) => ({ ...prev, paradas_completadas: nuevas }))
-
-    try {
-      await updateParadas(id, nuevas)
-    } catch {
-      // Revertir si falla
-      setViaje((prev) => ({ ...prev, paradas_completadas: actuales }))
-      setError('No se pudo actualizar la parada.')
-    }
-  }
-
   const abrirEdicion = async (v) => {
     setEditError(null)
     setEditForm({
       camionero_id: v.camionero_id ?? '',
       vehiculo_id:  v.vehiculo_id  ?? '',
-      ruta_id:      v.ruta_id      ?? '',
+      tipo:         v.tipo         ?? 'carga',
+      origen:       v.origen       ?? '',
+      destino:      v.destino      ?? '',
       estado:       v.estado       ?? 'pendiente',
       fecha_inicio: v.fecha_inicio ? v.fecha_inicio.slice(0, 10) : '',
       fecha_fin:    v.fecha_fin    ? v.fecha_fin.slice(0, 10)    : '',
@@ -106,11 +86,11 @@ export default function ViajeDetalle() {
     })
     if (isAdmin() && editOpts.camioneros.length === 0) {
       try {
-        const [cRes, vRes, rRes] = await Promise.all([getCamioneros(), getVehiculos(), getRutas()])
+        const [cRes, vRes, pRes] = await Promise.all([getCamioneros(), getVehiculos(), getParadas()])
         setEditOpts({
           camioneros: cRes.data.data ?? [],
           vehiculos:  vRes.data.data ?? [],
-          rutas:      rRes.data.data ?? [],
+          paradas:    pRes.data.data ?? [],
         })
       } catch {
         setEditError('No se pudieron cargar los datos.')
@@ -211,12 +191,8 @@ export default function ViajeDetalle() {
     <div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn btn--ghost btn--sm" onClick={() => navigate(-1)}>
-            ← Volver
-          </button>
-          <h2>
-            {viaje.ruta?.origen ?? '?'} → {viaje.ruta?.destino ?? '?'}
-          </h2>
+          <button className="btn btn--ghost btn--sm" onClick={() => navigate(-1)}>← Volver</button>
+          <h2>{viaje.origen ?? '?'} → {viaje.destino ?? '?'}</h2>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {(isAdmin() || (viaje.estado === 'pendiente' && user?.id === viaje.camionero?.user_id)) && (
@@ -236,20 +212,6 @@ export default function ViajeDetalle() {
         </div>
       </div>
 
-      {/* Timeline de ruta */}
-      {viaje.ruta && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <TripTimeline
-            origen={viaje.ruta.origen}
-            destino={viaje.ruta.destino}
-            paradas={viaje.ruta.paradas ?? []}
-            completadas={viaje.paradas_completadas ?? []}
-            canCheck={viaje.estado === 'en_curso'}
-            onToggle={handleToggleParada}
-          />
-        </div>
-      )}
-
       {/* Info del viaje */}
       <div className="detail-grid">
         <div className="card">
@@ -261,10 +223,14 @@ export default function ViajeDetalle() {
                 {ESTADO_LABELS[viaje.estado]}
               </span>
             </dd>
+            <dt>Tipo</dt>
+            <dd style={{ textTransform: 'capitalize' }}>{viaje.tipo ?? '—'}</dd>
+            <dt>Origen</dt>
+            <dd>{viaje.origen ?? '—'}</dd>
+            <dt>Destino</dt>
+            <dd>{viaje.destino ?? '—'}</dd>
             <dt>Vehículo</dt>
             <dd>{viaje.vehiculo?.matricula ?? '—'} {viaje.vehiculo?.marca} {viaje.vehiculo?.modelo}</dd>
-            <dt>Km estimados</dt>
-            <dd>{viaje.ruta?.km_estimados ?? '—'} km</dd>
             <dt>Fecha prevista inicio</dt>
             <dd>{viaje.fecha_inicio ? new Date(viaje.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</dd>
             <dt>Fecha prevista fin</dt>
@@ -279,29 +245,12 @@ export default function ViajeDetalle() {
             <dd>{viaje.notas ?? '—'}</dd>
           </dl>
         </div>
-
-        <div className="card">
-          <p className="card__title">Ruta</p>
-          <dl className="detail-list">
-            <dt>Origen</dt>
-            <dd>{viaje.ruta?.origen ?? '—'}</dd>
-            <dt>Destino</dt>
-            <dd>{viaje.ruta?.destino ?? '—'}</dd>
-            {viaje.ruta?.paradas?.length > 0 && (
-              <>
-                <dt>Paradas</dt>
-                <dd>{viaje.ruta.paradas.join(', ')}</dd>
-              </>
-            )}
-          </dl>
-        </div>
       </div>
 
       {/* Gestiones */}
       <div className="card" style={{ marginTop: 20 }}>
         <p className="card__title" style={{ marginBottom: 14 }}>Gestiones</p>
 
-        {/* Formulario nueva gestión */}
         <form onSubmit={handleAddGestion} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <textarea
             value={nuevoTexto}
@@ -322,14 +271,13 @@ export default function ViajeDetalle() {
           <button
             type="submit"
             className="btn btn--primary btn--sm"
-            disabled={guardando || (viaje.estado !== 'en_curso' && !nuevoTexto.trim())}
+            disabled={guardando || !nuevoTexto.trim()}
             style={{ alignSelf: 'flex-end' }}
           >
             {guardando ? '…' : 'Añadir'}
           </button>
         </form>
 
-        {/* Lista de gestiones */}
         {gestiones.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin gestiones registradas.</p>
         ) : (
@@ -368,10 +316,7 @@ export default function ViajeDetalle() {
                       >
                         {guardandoEdit ? 'Guardando…' : 'Guardar'}
                       </button>
-                      <button
-                        className="btn btn--ghost btn--sm"
-                        onClick={() => setEditandoId(null)}
-                      >
+                      <button className="btn btn--ghost btn--sm" onClick={() => setEditandoId(null)}>
                         Cancelar
                       </button>
                     </div>
@@ -385,12 +330,8 @@ export default function ViajeDetalle() {
                       </span>
                       {(user?.id === g.user_id || user?.role === 'admin') && (
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn--ghost btn--sm" onClick={() => handleStartEdit(g)}>
-                            Editar
-                          </button>
-                          <button className="btn btn--danger btn--sm" onClick={() => handleDeleteGestion(g.id)}>
-                            Eliminar
-                          </button>
+                          <button className="btn btn--ghost btn--sm" onClick={() => handleStartEdit(g)}>Editar</button>
+                          <button className="btn btn--danger btn--sm" onClick={() => handleDeleteGestion(g.id)}>Eliminar</button>
                         </div>
                       )}
                     </div>
@@ -402,20 +343,74 @@ export default function ViajeDetalle() {
         )}
       </div>
 
-      {/* Modal edición viaje */}
+      {/* Modal edición */}
       {editModal && (
-        <div className="modal-overlay" onClick={() => setEditModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h3>Editar viaje</h3>
-              <button className="modal__close" onClick={() => setEditModal(false)}>✕</button>
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setEditModal(false)}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              borderRadius: 8,
+              width: '100%',
+              maxWidth: 520,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: 24,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ margin: 0 }}>Editar viaje</h3>
+              <button className="btn btn--ghost btn--sm" onClick={() => setEditModal(false)}>✕</button>
             </div>
 
-            {editError && <div className="alert alert--error">{editError}</div>}
+            {editError && <div className="alert alert--error" style={{ marginBottom: 12 }}>{editError}</div>}
 
             <form onSubmit={handleGuardarEdicion} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {isAdmin() ? (
+              {isAdmin() && (
                 <>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Tipo</label>
+                      <select value={editForm.tipo} onChange={setEdit('tipo')}>
+                        <option value="carga">Carga</option>
+                        <option value="descarga">Descarga</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Estado</label>
+                      <select value={editForm.estado} onChange={setEdit('estado')}>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_curso">En curso</option>
+                        <option value="completado">Completado</option>
+                        <option value="cancelado">Cancelado</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Origen</label>
+                      <input list="edit-paradas-origen" value={editForm.origen} onChange={setEdit('origen')} placeholder="Origen…" />
+                      <datalist id="edit-paradas-origen">
+                        {editOpts.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
+                      </datalist>
+                    </div>
+                    <div className="form-group">
+                      <label>Destino</label>
+                      <input list="edit-paradas-destino" value={editForm.destino} onChange={setEdit('destino')} placeholder="Destino…" />
+                      <datalist id="edit-paradas-destino">
+                        {editOpts.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
+                      </datalist>
+                    </div>
+                  </div>
                   <div className="form-group">
                     <label>Camionero</label>
                     <select value={editForm.camionero_id} onChange={setEdit('camionero_id')} required>
@@ -434,24 +429,6 @@ export default function ViajeDetalle() {
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label>Ruta</label>
-                    <select value={editForm.ruta_id} onChange={setEdit('ruta_id')}>
-                      <option value="">Sin ruta</option>
-                      {editOpts.rutas.map((r) => (
-                        <option key={r.id} value={r.id}>{r.origen} → {r.destino} ({r.km_estimados} km)</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Estado</label>
-                    <select value={editForm.estado} onChange={setEdit('estado')}>
-                      <option value="pendiente">Pendiente</option>
-                      <option value="en_curso">En curso</option>
-                      <option value="completado">Completado</option>
-                      <option value="cancelado">Cancelado</option>
-                    </select>
-                  </div>
                   <div className="form-row">
                     <div className="form-group">
                       <label>Fecha prevista inicio</label>
@@ -463,22 +440,15 @@ export default function ViajeDetalle() {
                     </div>
                   </div>
                 </>
-              ) : null}
+              )}
 
               <div className="form-group">
                 <label>Notas</label>
-                <textarea
-                  value={editForm.notas}
-                  onChange={setEdit('notas')}
-                  rows={3}
-                  placeholder="Instrucciones especiales…"
-                />
+                <textarea value={editForm.notas} onChange={setEdit('notas')} rows={3} placeholder="Instrucciones especiales…" />
               </div>
 
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn--ghost" onClick={() => setEditModal(false)}>
-                  Cancelar
-                </button>
+                <button type="button" className="btn btn--ghost" onClick={() => setEditModal(false)}>Cancelar</button>
                 <button type="submit" className="btn btn--primary" disabled={editSaving}>
                   {editSaving ? 'Guardando…' : 'Guardar cambios'}
                 </button>

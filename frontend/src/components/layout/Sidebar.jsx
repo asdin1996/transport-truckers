@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useMensajes } from '../../context/MensajesContext'
@@ -6,17 +7,22 @@ const NAV_ADMIN = [
   {
     section: 'Gestión',
     links: [
-      { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
+      { to: '/dashboard',  icon: '⊞', label: 'Dashboard' },
       { to: '/camioneros', icon: '👤', label: 'Camioneros' },
-      { to: '/vehiculos', icon: '🚛', label: 'Vehículos' },
-      { to: '/rutas',  icon: '📍', label: 'Rutas' },
-      { to: '/viajes', icon: '🗺', label: 'Viajes' },
+      { to: '/vehiculos',  icon: '🚛', label: 'Vehículos' },
+      { to: '/viajes',     icon: '🗺', label: 'Viajes' },
     ],
   },
   {
     section: 'Comunicación',
     links: [
       { to: '/mensajes', icon: '💬', label: 'Mensajes', badge: true },
+    ],
+  },
+  {
+    section: 'Configuración',
+    links: [
+      { to: '/configuracion/paradas', icon: '📍', label: 'Paradas' },
     ],
   },
 ]
@@ -26,8 +32,8 @@ const NAV_CAMIONERO = [
     section: 'Mi trabajo',
     links: [
       { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
-      { to: '/viajes', icon: '🗺', label: 'Mis Viajes' },
-      { to: '/mensajes', icon: '💬', label: 'Mensajes', badge: true },
+      { to: '/viajes',    icon: '🗺', label: 'Mis Viajes' },
+      { to: '/mensajes',  icon: '💬', label: 'Mensajes', badge: true },
     ],
   },
 ]

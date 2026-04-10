@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\GestionController;
 use App\Http\Controllers\Api\MensajeController;
 use App\Http\Controllers\Api\UbicacionController;
-use App\Http\Controllers\Api\RutaController;
+use App\Http\Controllers\Api\ParadaController;
 use App\Http\Controllers\Api\VehiculoController;
 use App\Http\Controllers\Api\ViajeController;
 use Illuminate\Support\Facades\Route;
@@ -32,8 +32,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Vehículos — admin y camionero pueden acceder
     Route::apiResource('vehiculos', VehiculoController::class);
 
-    // Rutas — admin y camionero pueden acceder
-    Route::apiResource('rutas', RutaController::class);
+    // Paradas (configuración)
+    Route::get('paradas', [ParadaController::class, 'index']);
+    Route::post('paradas', [ParadaController::class, 'store']);
+    Route::post('paradas/import', [ParadaController::class, 'import']);
+    Route::delete('paradas/{id}', [ParadaController::class, 'destroy']);
 
     // Viajes
     Route::apiResource('viajes', ViajeController::class);
