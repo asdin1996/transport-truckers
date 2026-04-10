@@ -87,6 +87,14 @@ class AuthController extends Controller
         ]);
     }
 
+    public function savePushToken(Request $request): JsonResponse
+    {
+        $request->validate(['push_token' => 'required|string']);
+        $request->user()->update(['push_token' => $request->push_token]);
+
+        return response()->json(['status' => 'ok', 'message' => 'Token guardado.', 'data' => null]);
+    }
+
     public function adminContact(): JsonResponse
     {
         $admin = \App\Models\User::where('role', 'admin')->select('id', 'name')->first();

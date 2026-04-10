@@ -22,6 +22,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/push-token', [AuthController::class, 'savePushToken']);
     Route::get('/admin-contact', [AuthController::class, 'adminContact']);
     Route::get('/contactos', [AuthController::class, 'contactos']);
 
