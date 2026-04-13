@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { getParadas, createParada, importParadas, deleteParada } from '../../../services/paradas'
+import { getParadas, createParada, deleteParada } from '../../../services/paradas'
+import api from '../../../services/api'
 
 export default function Paradas() {
-  const [paradas, setParadas]     = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [nombre, setNombre]       = useState('')
-  const [saving, setSaving]       = useState(false)
-  const [error, setError]         = useState(null)
-  const [importText, setImportText] = useState('')
-  const [importing, setImporting] = useState(false)
-  const [importMsg, setImportMsg] = useState(null)
-  const inputRef = useRef(null)
+  const [paradas, setParadas]       = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [nombre, setNombre]         = useState('')
+  const [saving, setSaving]         = useState(false)
+  const [error, setError]           = useState(null)
+  const [file, setFile]             = useState(null)
+  const [importing, setImporting]   = useState(false)
+  const [importMsg, setImportMsg]   = useState(null)
+  const [importError, setImportError] = useState(null)
+  const fileInputRef = useRef(null)
 
   const cargar = () =>
     getParadas()
@@ -37,6 +39,29 @@ export default function Paradas() {
     }
   }
 
+  const handleImport = async () => {
+    if (!file) return
+    setImporting(true)
+    setImportMsg(null)
+    setImportError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await api.post('/paradas/import', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setImportMsg(res.data.message)
+      setFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      cargar()
+    } catch (err) {
+      const msgs = err.response?.data?.errors
+      setImportError(msgs ? Object.values(msgs).flat().join(' ') : 'Error al importar el fichero.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const handleDelete = async (id) => {
     if (!confirm('¿Eliminar esta parada?')) return
     try {
@@ -44,23 +69,6 @@ export default function Paradas() {
       setParadas((prev) => prev.filter((p) => p.id !== id))
     } catch {
       setError('Error al eliminar.')
-    }
-  }
-
-  const handleImport = async () => {
-    const lineas = importText.split('\n').map((l) => l.trim()).filter(Boolean)
-    if (!lineas.length) return
-    setImporting(true)
-    setImportMsg(null)
-    try {
-      const res = await importParadas(lineas)
-      setImportMsg(res.data.message)
-      setImportText('')
-      cargar()
-    } catch {
-      setImportMsg('Error al importar.')
-    } finally {
-      setImporting(false)
     }
   }
 
@@ -77,7 +85,6 @@ export default function Paradas() {
         <p className="card__title">Añadir parada</p>
         <form onSubmit={handleAdd} style={{ display: 'flex', gap: 10 }}>
           <input
-            ref={inputRef}
             type="text"
             placeholder="Nombre de la parada…"
             value={nombre}
@@ -90,29 +97,31 @@ export default function Paradas() {
         </form>
       </div>
 
-      {/* Importar en bloque */}
+      {/* Importar desde Excel */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <p className="card__title">Importar paradas</p>
-        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 8 }}>
-          Una parada por línea.
+        <p className="card__title">Importar desde Excel</p>
+        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 12 }}>
+          El fichero debe tener una columna llamada <strong>Nombre</strong>. Se omiten duplicados.
+          Formatos admitidos: <strong>.xlsx, .xls, .csv</strong>
         </p>
-        <textarea
-          rows={5}
-          placeholder={'Madrid - Mercamadrid\nBarcelona - Zona Franca\nValencia - Puerto'}
-          value={importText}
-          onChange={(e) => setImportText(e.target.value)}
-          style={{ width: '100%', marginBottom: 10, boxSizing: 'border-box' }}
-        />
-        {importMsg && (
-          <p style={{ fontSize: 13, color: 'var(--color-primary)', marginBottom: 8 }}>{importMsg}</p>
-        )}
-        <button
-          className="btn btn--primary"
-          onClick={handleImport}
-          disabled={importing || !importText.trim()}
-        >
-          {importing ? 'Importando…' : 'Importar'}
-        </button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={(e) => { setFile(e.target.files[0] ?? null); setImportMsg(null); setImportError(null) }}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+          <button
+            className="btn btn--primary"
+            onClick={handleImport}
+            disabled={importing || !file}
+          >
+            {importing ? 'Importando…' : 'Importar'}
+          </button>
+        </div>
+        {importMsg   && <p style={{ fontSize: 13, color: '#66bb6a', marginTop: 8 }}>{importMsg}</p>}
+        {importError && <p style={{ fontSize: 13, color: 'var(--color-primary)', marginTop: 8 }}>{importError}</p>}
       </div>
 
       {/* Listado */}
@@ -136,10 +145,7 @@ export default function Paradas() {
                   <tr key={p.id}>
                     <td>{p.nombre}</td>
                     <td style={{ textAlign: 'right' }}>
-                      <button
-                        className="btn btn--danger btn--sm"
-                        onClick={() => handleDelete(p.id)}
-                      >
+                      <button className="btn btn--danger btn--sm" onClick={() => handleDelete(p.id)}>
                         Eliminar
                       </button>
                     </td>

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Imports\ParadasImport;
 use App\Models\Parada;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ParadaController extends Controller
 {
@@ -27,18 +29,18 @@ class ParadaController extends Controller
 
     public function import(Request $request): JsonResponse
     {
-        $request->validate(['paradas' => 'required|array', 'paradas.*' => 'required|string|max:255']);
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:2048',
+        ]);
 
-        $creadas = 0;
-        foreach ($request->paradas as $nombre) {
-            $nombre = trim($nombre);
-            if ($nombre && ! Parada::withTrashed()->where('nombre', $nombre)->exists()) {
-                Parada::create(['nombre' => $nombre]);
-                $creadas++;
-            }
-        }
+        $import = new ParadasImport();
+        Excel::import($import, $request->file('file'));
 
-        return response()->json(['status' => 'ok', 'data' => null, 'message' => "{$creadas} paradas importadas."]);
+        return response()->json([
+            'status'  => 'ok',
+            'data'    => null,
+            'message' => "{$import->importadas} paradas importadas.",
+        ]);
     }
 
     public function destroy(int $id): JsonResponse
