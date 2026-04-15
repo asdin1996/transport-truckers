@@ -3,14 +3,17 @@ import { getParadas, createParada, deleteParada } from '../../../services/parada
 import api from '../../../services/api'
 
 export default function Paradas() {
-  const [paradas, setParadas]       = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [nombre, setNombre]         = useState('')
-  const [saving, setSaving]         = useState(false)
-  const [error, setError]           = useState(null)
-  const [file, setFile]             = useState(null)
-  const [importing, setImporting]   = useState(false)
-  const [importMsg, setImportMsg]   = useState(null)
+  const [paradas, setParadas]         = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [busqueda, setBusqueda]       = useState('')
+  const [modalNueva, setModalNueva]   = useState(false)
+  const [modalImport, setModalImport] = useState(false)
+  const [nombre, setNombre]           = useState('')
+  const [saving, setSaving]           = useState(false)
+  const [error, setError]             = useState(null)
+  const [file, setFile]               = useState(null)
+  const [importing, setImporting]     = useState(false)
+  const [importMsg, setImportMsg]     = useState(null)
   const [importError, setImportError] = useState(null)
   const fileInputRef = useRef(null)
 
@@ -30,6 +33,7 @@ export default function Paradas() {
     try {
       await createParada({ nombre: nombre.trim() })
       setNombre('')
+      setModalNueva(false)
       cargar()
     } catch (err) {
       const msgs = err.response?.data?.errors
@@ -72,80 +76,76 @@ export default function Paradas() {
     }
   }
 
+  const filtradas = paradas.filter((p) =>
+    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  )
+
   return (
-    <div style={{ maxWidth: 700 }}>
+    <div style={{ maxWidth: 800 }}>
+
+      {/* Cabecera */}
       <div className="page-header">
         <h2>Paradas</h2>
-      </div>
-
-      {error && <div className="alert alert--error" style={{ marginBottom: 16 }}>{error}</div>}
-
-      {/* Añadir una parada */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <p className="card__title">Añadir parada</p>
-        <form onSubmit={handleAdd} style={{ display: 'flex', gap: 10 }}>
-          <input
-            type="text"
-            placeholder="Nombre de la parada…"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            style={{ flex: 1 }}
-          />
-          <button type="submit" className="btn btn--primary" disabled={saving || !nombre.trim()}>
-            {saving ? 'Guardando…' : 'Añadir'}
-          </button>
-        </form>
-      </div>
-
-      {/* Importar desde Excel */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <p className="card__title">Importar desde Excel</p>
-        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 12 }}>
-          El fichero debe tener una columna llamada <strong>Nombre</strong>. Se omiten duplicados.
-          Formatos admitidos: <strong>.xlsx, .xls, .csv</strong>
-        </p>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={(e) => { setFile(e.target.files[0] ?? null); setImportMsg(null); setImportError(null) }}
-            style={{ flex: 1, minWidth: 0 }}
-          />
+        <div style={{ display: 'flex', gap: 8 }}>
           <button
-            className="btn btn--primary"
-            onClick={handleImport}
-            disabled={importing || !file}
+            className="btn btn--ghost btn--sm"
+            title="Importar Excel"
+            onClick={() => { setModalImport(true); setImportMsg(null); setImportError(null) }}
           >
-            {importing ? 'Importando…' : 'Importar'}
+            ⬆ Importar
+          </button>
+          <button
+            className="btn btn--primary btn--sm"
+            title="Nueva parada"
+            onClick={() => { setModalNueva(true); setNombre(''); setError(null) }}
+          >
+            + Nueva
           </button>
         </div>
-        {importMsg   && <p style={{ fontSize: 13, color: '#66bb6a', marginTop: 8 }}>{importMsg}</p>}
-        {importError && <p style={{ fontSize: 13, color: 'var(--color-primary)', marginTop: 8 }}>{importError}</p>}
       </div>
 
-      {/* Listado */}
+      {/* Barra de búsqueda + contador */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <input
+          type="text"
+          placeholder="Buscar parada…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={{ flex: 1 }}
+        />
+        <span style={{ fontSize: 13, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+          {filtradas.length} de {paradas.length}
+        </span>
+      </div>
+
+      {/* Tabla */}
       <div className="card">
-        <p className="card__title">Paradas registradas ({paradas.length})</p>
         {loading ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Cargando…</p>
-        ) : paradas.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin paradas registradas.</p>
+        ) : filtradas.length === 0 ? (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>
+            {busqueda ? 'Sin resultados para esa búsqueda.' : 'Sin paradas registradas.'}
+          </p>
         ) : (
           <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
+                  <th>#</th>
                   <th>Nombre</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {paradas.map((p) => (
+                {filtradas.map((p, i) => (
                   <tr key={p.id}>
+                    <td style={{ color: 'var(--color-text-muted)', fontSize: 12, width: 40 }}>{i + 1}</td>
                     <td>{p.nombre}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn--danger btn--sm" onClick={() => handleDelete(p.id)}>
+                    <td style={{ textAlign: 'right', width: 80 }}>
+                      <button
+                        className="btn btn--danger btn--sm"
+                        onClick={() => handleDelete(p.id)}
+                      >
                         Eliminar
                       </button>
                     </td>
@@ -156,6 +156,121 @@ export default function Paradas() {
           </div>
         )}
       </div>
+
+      {/* Modal — Nueva parada */}
+      {modalNueva && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setModalNueva(false)}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              borderRadius: 8,
+              width: '100%',
+              maxWidth: 440,
+              padding: 24,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ margin: 0 }}>Nueva parada</h3>
+              <button className="btn btn--ghost btn--sm" onClick={() => setModalNueva(false)}>✕</button>
+            </div>
+
+            {error && <div className="alert alert--error" style={{ marginBottom: 12 }}>{error}</div>}
+
+            <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="form-group">
+                <label>Nombre</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Madrid - Mercamadrid"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn--ghost" onClick={() => setModalNueva(false)}>Cancelar</button>
+                <button type="submit" className="btn btn--primary" disabled={saving || !nombre.trim()}>
+                  {saving ? 'Guardando…' : 'Crear parada'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Importar Excel */}
+      {modalImport && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setModalImport(false)}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              borderRadius: 8,
+              width: '100%',
+              maxWidth: 480,
+              padding: 24,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ margin: 0 }}>Importar paradas</h3>
+              <button className="btn btn--ghost btn--sm" onClick={() => setModalImport(false)}>✕</button>
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>
+              El fichero debe contener una columna con cabecera <strong>Nombre</strong>.<br />
+              Los duplicados se omiten automáticamente.<br />
+              Formatos: <strong>.xlsx · .xls · .csv</strong>
+            </p>
+
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label>Seleccionar fichero</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => {
+                  setFile(e.target.files[0] ?? null)
+                  setImportMsg(null)
+                  setImportError(null)
+                }}
+              />
+            </div>
+
+            {importMsg   && <p style={{ fontSize: 13, color: '#66bb6a', marginBottom: 12 }}>{importMsg}</p>}
+            {importError && <p style={{ fontSize: 13, color: 'var(--color-primary)', marginBottom: 12 }}>{importError}</p>}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn btn--ghost" onClick={() => setModalImport(false)}>Cerrar</button>
+              <button
+                className="btn btn--primary"
+                onClick={handleImport}
+                disabled={importing || !file}
+              >
+                {importing ? 'Importando…' : 'Importar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
