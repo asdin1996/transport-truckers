@@ -4,9 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import { getViajes, updateViaje } from '../services/viajes'
 import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
-import { getRutas } from '../services/rutas'
+import { getParadas } from '../services/paradas'
 import Pagination from '../components/Pagination'
 import useTableFilter from '../hooks/useTableFilter'
+import NuevoViaje from './admin/NuevoViaje'
 
 const PER_PAGE = 10
 
@@ -19,16 +20,16 @@ const ESTADO_LABELS = {
 
 const SEARCH_FIELDS = [
   (v) => `${v.camionero?.nombre ?? ''} ${v.camionero?.apellidos ?? ''}`,
-  (v) => `${v.ruta?.origen ?? ''} ${v.ruta?.destino ?? ''}`,
+  (v) => `${v.origen ?? ''} ${v.destino ?? ''}`,
   (v) => v.vehiculo?.matricula ?? '',
   'estado',
 ]
 
 const SORT_GETTERS = {
-  camionero:   (v) => `${v.camionero?.nombre ?? ''} ${v.camionero?.apellidos ?? ''}`,
-  ruta:        (v) => `${v.ruta?.origen ?? ''} → ${v.ruta?.destino ?? ''}`,
-  fecha_inicio:(v) => v.fecha_inicio ?? '',
-  fecha_fin:   (v) => v.fecha_fin ?? '',
+  camionero:    (v) => `${v.camionero?.nombre ?? ''} ${v.camionero?.apellidos ?? ''}`,
+  origen:       (v) => v.origen ?? '',
+  destino:      (v) => v.destino ?? '',
+  fecha_inicio: (v) => v.fecha_inicio ?? '',
 }
 
 function SortIcon({ col, sort }) {
@@ -43,13 +44,13 @@ function SortIcon({ col, sort }) {
 export default function Viajes() {
   const { user, isAdmin } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [viajes, setViajes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [filtro, setFiltro] = useState(searchParams.get('estado') ?? 'todos')
-  const [page, setPage] = useState(1)
+  const [viajes, setViajes]     = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(null)
+  const [filtro, setFiltro]     = useState(searchParams.get('estado') ?? 'todos')
+  const [page, setPage]         = useState(1)
+  const [modalNuevo, setModalNuevo] = useState(false)
 
-  // Modal edición
   const [editModal, setEditModal]   = useState(false)
   const [editViaje, setEditViaje]   = useState(null)
   const [editForm, setEditForm]     = useState({})
@@ -66,7 +67,6 @@ export default function Viajes() {
   useEffect(() => { cargar() }, [])
 
   const base = filtro === 'todos' ? viajes : viajes.filter((v) => v.estado === filtro)
-
   const { query, setQuery, sort, toggleSort, processed } = useTableFilter(base, SEARCH_FIELDS, SORT_GETTERS)
 
   const cambiarFiltro = (estado) => {
@@ -77,17 +77,17 @@ export default function Viajes() {
 
   const doSearch = (q) => { setQuery(q); setPage(1) }
   const doSort   = (col) => { toggleSort(col); setPage(1) }
+  const lista    = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
-  const lista = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-
-  // ── Edición ──────────────────────────────────────────────────
   const abrirEdicion = async (v) => {
     setEditViaje(v)
     setEditError(null)
     setEditForm({
       camionero_id: v.camionero_id ?? '',
       vehiculo_id:  v.vehiculo_id  ?? '',
-      ruta_id:      v.ruta_id      ?? '',
+      tipo:         v.tipo         ?? 'carga',
+      origen:       v.origen       ?? '',
+      destino:      v.destino      ?? '',
       estado:       v.estado       ?? 'pendiente',
       fecha_inicio: v.fecha_inicio ? v.fecha_inicio.slice(0, 10) : '',
       fecha_fin:    v.fecha_fin    ? v.fecha_fin.slice(0, 10)    : '',
@@ -95,11 +95,11 @@ export default function Viajes() {
     })
     if (!editOpts) {
       try {
-        const [cRes, vRes, rRes] = await Promise.all([getCamioneros(), getVehiculos(), getRutas()])
+        const [cRes, vRes, pRes] = await Promise.all([getCamioneros(), getVehiculos(), getParadas()])
         setEditOpts({
           camioneros: cRes.data.data ?? [],
           vehiculos:  vRes.data.data ?? [],
-          rutas:      rRes.data.data ?? [],
+          paradas:    pRes.data.data ?? [],
         })
       } catch {
         setEditError('No se pudieron cargar los datos.')
@@ -129,24 +129,24 @@ export default function Viajes() {
   }
 
   const setField = (f) => (e) => setEditForm((prev) => ({ ...prev, [f]: e.target.value }))
-
-  const puedeEditar = (v) =>
-    isAdmin() || (v.estado === 'pendiente' && v.camionero?.user_id === user?.id)
-
-  // ─────────────────────────────────────────────────────────────
+  const puedeEditar = (v) => isAdmin() || (v.estado === 'pendiente' && v.camionero?.user_id === user?.id)
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
   if (error)   return <div className="alert alert--error">{error}</div>
 
   return (
     <div>
+      {/* Cabecera */}
       <div className="page-header">
         <h2>{isAdmin() ? 'Viajes' : 'Mis Viajes'}</h2>
         {isAdmin() && (
-          <Link to="/viajes/nuevo" className="btn btn--primary btn--sm">+ Nuevo viaje</Link>
+          <button className="btn btn--primary btn--sm" onClick={() => setModalNuevo(true)}>
+            + Nuevo viaje
+          </button>
         )}
       </div>
 
+      {/* Filtros de estado */}
       <div className="filter-tabs">
         {['todos', 'pendiente', 'en_curso', 'completado', 'cancelado'].map((e) => (
           <button
@@ -155,24 +155,33 @@ export default function Viajes() {
             onClick={() => cambiarFiltro(e)}
           >
             {e === 'todos' ? 'Todos' : ESTADO_LABELS[e]}
+            <span style={{ marginLeft: 5, fontSize: 11, opacity: 0.7 }}>
+              ({e === 'todos' ? viajes.length : viajes.filter((v) => v.estado === e).length})
+            </span>
           </button>
         ))}
       </div>
 
       <div className="card">
+        {/* Buscador + contador */}
         <div className="table-controls">
           <div className="table-search">
             <span className="table-search__icon">⌕</span>
             <input
               value={query}
               onChange={(e) => doSearch(e.target.value)}
-              placeholder="Buscar por camionero, ruta, matrícula…"
+              placeholder="Buscar por camionero, origen, destino, matrícula…"
             />
           </div>
+          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+            {processed.length} resultado{processed.length !== 1 ? 's' : ''}
+          </span>
         </div>
 
         {lista.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No hay viajes.</p>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13, padding: '8px 0' }}>
+            No hay viajes.
+          </p>
         ) : (
           <div className="table-wrapper">
             <table>
@@ -183,18 +192,16 @@ export default function Viajes() {
                       Camionero <SortIcon col="camionero" sort={sort} />
                     </th>
                   )}
-                  <th className="th--sortable" onClick={() => doSort('ruta')}>
-                    Ruta <SortIcon col="ruta" sort={sort} />
+                  <th className="th--sortable" onClick={() => doSort('origen')}>
+                    Origen <SortIcon col="origen" sort={sort} />
+                  </th>
+                  <th className="th--sortable" onClick={() => doSort('destino')}>
+                    Destino <SortIcon col="destino" sort={sort} />
                   </th>
                   <th>Vehículo</th>
-                  <th className="th--sortable" onClick={() => doSort('estado')}>
-                    Estado <SortIcon col="estado" sort={sort} />
-                  </th>
+                  <th>Estado</th>
                   <th className="th--sortable" onClick={() => doSort('fecha_inicio')}>
                     Inicio <SortIcon col="fecha_inicio" sort={sort} />
-                  </th>
-                  <th className="th--sortable" onClick={() => doSort('fecha_fin')}>
-                    Fin <SortIcon col="fecha_fin" sort={sort} />
                   </th>
                   <th></th>
                 </tr>
@@ -203,15 +210,19 @@ export default function Viajes() {
                 {lista.map((v) => (
                   <tr key={v.id}>
                     {isAdmin() && <td>{v.camionero?.nombre} {v.camionero?.apellidos}</td>}
-                    <td>{v.ruta?.origen ?? '—'} → {v.ruta?.destino ?? '—'}</td>
+                    <td>{v.origen ?? '—'}</td>
+                    <td>{v.destino ?? '—'}</td>
                     <td>{v.vehiculo?.matricula ?? '—'}</td>
                     <td>
                       <span className={`badge badge--${v.estado}`}>
                         {ESTADO_LABELS[v.estado]}
                       </span>
                     </td>
-                    <td>{v.fecha_inicio ? new Date(v.fecha_inicio).toLocaleDateString('es-ES') : '—'}</td>
-                    <td>{v.fecha_fin ? new Date(v.fecha_fin).toLocaleDateString('es-ES') : '—'}</td>
+                    <td>
+                      {v.fecha_inicio
+                        ? new Date(v.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES')
+                        : '—'}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         {puedeEditar(v) && (
@@ -219,9 +230,7 @@ export default function Viajes() {
                             Editar
                           </button>
                         )}
-                        <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">
-                          Ver
-                        </Link>
+                        <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">Ver</Link>
                       </div>
                     </td>
                   </tr>
@@ -233,20 +242,82 @@ export default function Viajes() {
         )}
       </div>
 
+      {/* Modal nuevo viaje */}
+      {modalNuevo && (
+        <NuevoViaje
+          onClose={() => setModalNuevo(false)}
+          onCreated={() => { setLoading(true); cargar() }}
+        />
+      )}
+
       {/* Modal edición */}
       {editModal && (
-        <div className="modal-overlay" onClick={() => setEditModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h3>Editar viaje</h3>
-              <button className="modal__close" onClick={() => setEditModal(false)}>✕</button>
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setEditModal(false)}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              borderRadius: 8,
+              width: '100%',
+              maxWidth: 520,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: 24,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ margin: 0 }}>Editar viaje</h3>
+              <button className="btn btn--ghost btn--sm" onClick={() => setEditModal(false)}>✕</button>
             </div>
 
-            {editError && <div className="alert alert--error">{editError}</div>}
+            {editError && <div className="alert alert--error" style={{ marginBottom: 12 }}>{editError}</div>}
 
             <form onSubmit={handleGuardar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {isAdmin() && editOpts && (
                 <>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Tipo</label>
+                      <select value={editForm.tipo} onChange={setField('tipo')}>
+                        <option value="carga">Carga</option>
+                        <option value="descarga">Descarga</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Estado</label>
+                      <select value={editForm.estado} onChange={setField('estado')}>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_curso">En curso</option>
+                        <option value="completado">Completado</option>
+                        <option value="cancelado">Cancelado</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Origen</label>
+                      <input list="edit-paradas-origen" value={editForm.origen} onChange={setField('origen')} placeholder="Origen…" />
+                      <datalist id="edit-paradas-origen">
+                        {editOpts.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
+                      </datalist>
+                    </div>
+                    <div className="form-group">
+                      <label>Destino</label>
+                      <input list="edit-paradas-destino" value={editForm.destino} onChange={setField('destino')} placeholder="Destino…" />
+                      <datalist id="edit-paradas-destino">
+                        {editOpts.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
+                      </datalist>
+                    </div>
+                  </div>
                   <div className="form-group">
                     <label>Camionero</label>
                     <select value={editForm.camionero_id} onChange={setField('camionero_id')} required>
@@ -265,51 +336,24 @@ export default function Viajes() {
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label>Ruta</label>
-                    <select value={editForm.ruta_id} onChange={setField('ruta_id')}>
-                      <option value="">Sin ruta</option>
-                      {editOpts.rutas.map((r) => (
-                        <option key={r.id} value={r.id}>{r.origen} → {r.destino} ({r.km_estimados} km)</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Estado</label>
-                    <select value={editForm.estado} onChange={setField('estado')}>
-                      <option value="pendiente">Pendiente</option>
-                      <option value="en_curso">En curso</option>
-                      <option value="completado">Completado</option>
-                      <option value="cancelado">Cancelado</option>
-                    </select>
-                  </div>
                   <div className="form-row">
                     <div className="form-group">
-                      <label>Fecha prevista inicio</label>
+                      <label>Fecha inicio</label>
                       <input type="date" value={editForm.fecha_inicio} onChange={setField('fecha_inicio')} />
                     </div>
                     <div className="form-group">
-                      <label>Fecha prevista fin</label>
+                      <label>Fecha fin estimada</label>
                       <input type="date" value={editForm.fecha_fin} onChange={setField('fecha_fin')} />
                     </div>
                   </div>
                 </>
               )}
-
               <div className="form-group">
                 <label>Notas</label>
-                <textarea
-                  value={editForm.notas}
-                  onChange={setField('notas')}
-                  rows={3}
-                  placeholder="Instrucciones especiales…"
-                />
+                <textarea value={editForm.notas} onChange={setField('notas')} rows={3} placeholder="Instrucciones especiales…" />
               </div>
-
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn--ghost" onClick={() => setEditModal(false)}>
-                  Cancelar
-                </button>
+                <button type="button" className="btn btn--ghost" onClick={() => setEditModal(false)}>Cancelar</button>
                 <button type="submit" className="btn btn--primary" disabled={editSaving}>
                   {editSaving ? 'Guardando…' : 'Guardar cambios'}
                 </button>
