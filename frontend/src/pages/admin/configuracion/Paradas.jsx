@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { getParadas, createParada, deleteParada } from '../../../services/paradas'
+import Pagination from '../../../components/Pagination'
 import api from '../../../services/api'
+
+const PER_PAGE = 10
 
 export default function Paradas() {
   const [paradas, setParadas]         = useState([])
   const [loading, setLoading]         = useState(true)
   const [busqueda, setBusqueda]       = useState('')
+  const [page, setPage]               = useState(1)
   const [modalNueva, setModalNueva]   = useState(false)
   const [modalImport, setModalImport] = useState(false)
   const [nombre, setNombre]           = useState('')
@@ -80,23 +84,22 @@ export default function Paradas() {
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
 
-  return (
-    <div style={{ maxWidth: 800 }}>
+  const doSearch = (q) => { setBusqueda(q); setPage(1) }
+  const lista = filtradas.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
-      {/* Cabecera */}
+  return (
+    <div>
       <div className="page-header">
         <h2>Paradas</h2>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             className="btn btn--ghost btn--sm"
-            title="Importar Excel"
             onClick={() => { setModalImport(true); setImportMsg(null); setImportError(null) }}
           >
             ⬆ Importar
           </button>
           <button
             className="btn btn--primary btn--sm"
-            title="Nueva parada"
             onClick={() => { setModalNueva(true); setNombre(''); setError(null) }}
           >
             + Nueva
@@ -104,26 +107,26 @@ export default function Paradas() {
         </div>
       </div>
 
-      {/* Barra de búsqueda + contador */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <input
-          type="text"
-          placeholder="Buscar parada…"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          style={{ flex: 1 }}
-        />
-        <span style={{ fontSize: 13, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-          {filtradas.length} de {paradas.length}
-        </span>
-      </div>
-
-      {/* Tabla */}
       <div className="card">
+        <div className="table-controls">
+          <div className="table-search">
+            <span className="table-search__icon">⌕</span>
+            <input
+              type="text"
+              placeholder="Buscar parada…"
+              value={busqueda}
+              onChange={(e) => doSearch(e.target.value)}
+            />
+          </div>
+          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+            {filtradas.length} resultado{filtradas.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
         {loading ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Cargando…</p>
         ) : filtradas.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13, padding: '8px 0' }}>
             {busqueda ? 'Sin resultados para esa búsqueda.' : 'Sin paradas registradas.'}
           </p>
         ) : (
@@ -137,15 +140,14 @@ export default function Paradas() {
                 </tr>
               </thead>
               <tbody>
-                {filtradas.map((p, i) => (
+                {lista.map((p, i) => (
                   <tr key={p.id}>
-                    <td style={{ color: 'var(--color-text-muted)', fontSize: 12, width: 40 }}>{i + 1}</td>
+                    <td style={{ color: 'var(--color-text-muted)', fontSize: 12, width: 40 }}>
+                      {(page - 1) * PER_PAGE + i + 1}
+                    </td>
                     <td>{p.nombre}</td>
-                    <td style={{ textAlign: 'right', width: 80 }}>
-                      <button
-                        className="btn btn--danger btn--sm"
-                        onClick={() => handleDelete(p.id)}
-                      >
+                    <td style={{ textAlign: 'right', width: 90 }}>
+                      <button className="btn btn--danger btn--sm" onClick={() => handleDelete(p.id)}>
                         Eliminar
                       </button>
                     </td>
@@ -153,6 +155,7 @@ export default function Paradas() {
                 ))}
               </tbody>
             </table>
+            <Pagination page={page} total={filtradas.length} perPage={PER_PAGE} onChange={setPage} />
           </div>
         )}
       </div>
@@ -260,11 +263,7 @@ export default function Paradas() {
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn btn--ghost" onClick={() => setModalImport(false)}>Cerrar</button>
-              <button
-                className="btn btn--primary"
-                onClick={handleImport}
-                disabled={importing || !file}
-              >
+              <button className="btn btn--primary" onClick={handleImport} disabled={importing || !file}>
                 {importing ? 'Importando…' : 'Importar'}
               </button>
             </div>
