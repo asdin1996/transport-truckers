@@ -8,20 +8,33 @@ import { getVehiculos } from '../services/vehiculos'
 import { getParadas } from '../services/paradas'
 
 const ESTADO_LABELS = {
-  pendiente:  'Pendiente',
-  en_curso:   'En curso',
-  completado: 'Completado',
-  cancelado:  'Cancelado',
+  pendiente:   'Pendiente',
+  en_camino:   'En camino',
+  cargando:    'Cargando',
+  descargando: 'Descargando',
+  finalizado:  'Finalizado',
+  cancelado:   'Cancelado',
 }
 
-const SIGUIENTE_ESTADO = {
-  pendiente: 'en_curso',
-  en_curso:  'completado',
+const FLUJO_CARGA    = ['pendiente', 'en_camino', 'cargando',    'finalizado']
+const FLUJO_DESCARGA = ['pendiente', 'en_camino', 'descargando', 'finalizado']
+
+function getFlujo(tipo) {
+  return tipo === 'descarga' ? FLUJO_DESCARGA : FLUJO_CARGA
+}
+
+function getSiguienteEstado(estado, tipo) {
+  if (estado === 'pendiente')  return 'en_camino'
+  if (estado === 'en_camino')  return tipo === 'descarga' ? 'descargando' : 'cargando'
+  if (estado === 'cargando' || estado === 'descargando') return 'finalizado'
+  return null
 }
 
 const ACCION_LABEL = {
-  en_curso:   'Iniciar viaje',
-  completado: 'Finalizar viaje',
+  en_camino:   'Comenzar viaje',
+  cargando:    'Cargar mercancía',
+  descargando: 'Descargar mercancía',
+  finalizado:  'Finalizar viaje',
 }
 
 function formatDuracion(minutos) {
@@ -34,6 +47,61 @@ function formatDuracion(minutos) {
 function formatHora(dt) {
   if (!dt) return '—'
   return new Date(dt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
+}
+
+function TripStepper({ estado, tipo }) {
+  const flujo = getFlujo(tipo)
+  const currentIdx = flujo.indexOf(estado)
+
+  return (
+    <div style={{ padding: '20px 0 8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
+        {flujo.map((step, i) => {
+          const done   = i < currentIdx
+          const active = i === currentIdx
+          return (
+            <div key={step} style={{ display: 'flex', alignItems: 'center', flex: i < flujo.length - 1 ? 1 : 'none' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: `2px solid ${active ? 'var(--color-primary)' : done ? '#66bb6a' : 'var(--color-border)'}`,
+                  background: active ? 'var(--color-primary)' : done ? '#66bb6a22' : 'transparent',
+                  color: active ? '#fff' : done ? '#66bb6a' : 'var(--color-text-muted)',
+                  flexShrink: 0,
+                }}>
+                  {done ? '✓' : i + 1}
+                </div>
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: active ? 600 : 400,
+                  color: active ? 'var(--color-text)' : done ? '#66bb6a' : 'var(--color-text-muted)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {ESTADO_LABELS[step]}
+                </span>
+              </div>
+              {i < flujo.length - 1 && (
+                <div style={{
+                  flex: 1,
+                  height: 2,
+                  background: done ? '#66bb6a' : 'var(--color-border)',
+                  margin: '0 4px',
+                  marginBottom: 22,
+                }} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export default function ViajeDetalle() {
@@ -122,7 +190,7 @@ export default function ViajeDetalle() {
   const setEdit = (f) => (e) => setEditForm((prev) => ({ ...prev, [f]: e.target.value }))
 
   const handleCambiarEstado = async () => {
-    const siguiente = SIGUIENTE_ESTADO[viaje.estado]
+    const siguiente = getSiguienteEstado(viaje.estado, viaje.tipo)
     if (!siguiente) return
     setAccionando(true)
     try {
@@ -185,32 +253,49 @@ export default function ViajeDetalle() {
   if (error)   return <div className="alert alert--error">{error}</div>
   if (!viaje)  return null
 
-  const siguienteEstado = SIGUIENTE_ESTADO[viaje.estado]
+  const siguienteEstado = getSiguienteEstado(viaje.estado, viaje.tipo)
+  const puedeAccionar   = isAdmin() || viaje.camionero?.user_id === user?.id
+  const puedeEditar     = isAdmin() || (viaje.estado === 'pendiente' && viaje.camionero?.user_id === user?.id)
 
   return (
     <div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="btn btn--ghost btn--sm" onClick={() => navigate(-1)}>← Volver</button>
-          <h2>{viaje.origen ?? '?'} → {viaje.destino ?? '?'}</h2>
+          <h2 style={{ margin: 0 }}>{viaje.origen ?? '?'} → {viaje.destino ?? '?'}</h2>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {(isAdmin() || (viaje.estado === 'pendiente' && user?.id === viaje.camionero?.user_id)) && (
+          {puedeEditar && (
             <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(viaje)}>
               Editar
             </button>
           )}
-          {siguienteEstado && (
-            <button
-              className={`btn btn--sm ${siguienteEstado === 'completado' ? 'btn--danger' : 'btn--primary'}`}
-              onClick={handleCambiarEstado}
-              disabled={accionando}
-            >
-              {accionando ? 'Actualizando…' : ACCION_LABEL[siguienteEstado]}
-            </button>
-          )}
         </div>
       </div>
+
+      {/* Stepper + acción principal */}
+      {viaje.estado !== 'cancelado' && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <TripStepper estado={viaje.estado} tipo={viaje.tipo} />
+          {siguienteEstado && puedeAccionar && (
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 16 }}>
+              <button
+                className={`btn btn--lg ${siguienteEstado === 'finalizado' ? 'btn--success' : 'btn--primary'}`}
+                onClick={handleCambiarEstado}
+                disabled={accionando}
+                style={{ minWidth: 200, padding: '12px 32px', fontSize: 15, fontWeight: 600 }}
+              >
+                {accionando ? 'Actualizando…' : ACCION_LABEL[siguienteEstado]}
+              </button>
+            </div>
+          )}
+          {viaje.estado === 'finalizado' && (
+            <p style={{ textAlign: 'center', color: '#66bb6a', fontWeight: 600, paddingTop: 8, fontSize: 14 }}>
+              Viaje completado
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Info del viaje */}
       <div className="detail-grid">
@@ -389,8 +474,10 @@ export default function ViajeDetalle() {
                       <label>Estado</label>
                       <select value={editForm.estado} onChange={setEdit('estado')}>
                         <option value="pendiente">Pendiente</option>
-                        <option value="en_curso">En curso</option>
-                        <option value="completado">Completado</option>
+                        <option value="en_camino">En camino</option>
+                        <option value="cargando">Cargando</option>
+                        <option value="descargando">Descargando</option>
+                        <option value="finalizado">Finalizado</option>
                         <option value="cancelado">Cancelado</option>
                       </select>
                     </div>

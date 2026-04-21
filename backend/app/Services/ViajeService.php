@@ -43,11 +43,11 @@ class ViajeService extends BaseService
     {
         $data = ['estado' => $status];
 
-        if ($status === 'en_curso' && ! $viaje->hora_inicio) {
+        if ($status === 'en_camino' && ! $viaje->hora_inicio) {
             $data['hora_inicio'] = now();
         }
 
-        if ($status === 'completado' && $viaje->hora_inicio) {
+        if ($status === 'finalizado' && $viaje->hora_inicio) {
             $data['hora_fin'] = now();
             $data['duracion_minutos'] = (int) $viaje->hora_inicio->diffInMinutes(now());
         }

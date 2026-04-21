@@ -35,8 +35,8 @@ export default function DashboardAdmin() {
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
-  const enCurso     = viajes.filter((v) => v.estado === 'en_curso')
-  const completados = viajes.filter((v) => v.estado === 'completado')
+  const activos     = viajes.filter((v) => ['en_camino', 'cargando', 'descargando'].includes(v.estado))
+  const finalizados = viajes.filter((v) => v.estado === 'finalizado')
 
   const inicio  = startOfWeek()
   const fin     = endOfWeek()
@@ -57,15 +57,15 @@ export default function DashboardAdmin() {
       </div>
 
       <div className="stats-row" style={{ marginBottom: 20 }}>
-        <StatCard label="Viajes en curso"    value={enCurso.length}      color="var(--color-primary)" to="/viajes?estado=en_curso" />
+        <StatCard label="Viajes activos"     value={activos.length}          color="var(--color-primary)" to="/viajes?estado=en_camino" />
         <StatCard label="Viajes pendientes"  value={pendientesSemana.length} color="#ffc107"           to="/viajes?estado=pendiente" />
-        <StatCard label="Completados"        value={completados.length}   color="#66bb6a"              to="/viajes?estado=completado" />
+        <StatCard label="Finalizados"        value={finalizados.length}      color="#66bb6a"           to="/viajes?estado=finalizado" />
       </div>
 
-      {/* Viajes en curso */}
+      {/* Viajes activos */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <p className="card__title">Viajes en curso</p>
-        {enCurso.length === 0 ? (
+        <p className="card__title">Viajes activos</p>
+        {activos.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No hay viajes activos.</p>
         ) : (
           <div className="table-wrapper">
@@ -75,11 +75,12 @@ export default function DashboardAdmin() {
                   <th>Camionero / Vehículo</th>
                   <th>Origen</th>
                   <th>Destino</th>
+                  <th>Estado</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {enCurso.map((v) => (
+                {activos.map((v) => (
                   <tr key={v.id}>
                     <td>
                       {v.camionero?.nombre} {v.camionero?.apellidos}
@@ -89,6 +90,11 @@ export default function DashboardAdmin() {
                     </td>
                     <td>{v.origen ?? '—'}</td>
                     <td>{v.destino ?? '—'}</td>
+                    <td>
+                      <span className={`badge badge--${v.estado}`}>
+                        {{ en_camino: 'En camino', cargando: 'Cargando', descargando: 'Descargando' }[v.estado]}
+                      </span>
+                    </td>
                     <td>
                       <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">Ver</Link>
                     </td>

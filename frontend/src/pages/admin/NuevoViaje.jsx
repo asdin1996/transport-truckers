@@ -105,7 +105,7 @@ export default function NuevoViaje({ onClose, onCreated }) {
                   <label>Estado</label>
                   <select value={form.estado} onChange={set('estado')}>
                     <option value="pendiente">Pendiente</option>
-                    <option value="en_curso">En curso</option>
+                    <option value="en_camino">En camino</option>
                   </select>
                 </div>
               </div>

@@ -119,9 +119,17 @@
 
 .btn--danger:hover:not(:disabled) { background: rgba(186,53,52,0.15); }
 
+.btn--success {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.btn--success:hover:not(:disabled) { background: #388e3c; }
+
 .btn--full { width: 100%; }
 
 .btn--sm { padding: 5px 12px; font-size: 12px; }
+.btn--lg { padding: 12px 32px; font-size: 15px; }
 
 /* ── Alerts ────────────────────────────────────────────────── */
 .alert {
@@ -199,10 +207,15 @@ tbody tr:hover td { background: var(--color-surface2); }
   font-weight: 600;
 }
 
-.badge--pendiente  { background: rgba(255,193,7,0.15);  color: #ffc107; }
-.badge--en_curso   { background: rgba(33,150,243,0.15); color: #42a5f5; }
-.badge--completado { background: rgba(76,175,80,0.15);  color: #66bb6a; }
-.badge--cancelado  { background: rgba(244,67,54,0.15);  color: #ef5350; }
+.badge--pendiente   { background: rgba(255,193,7,0.15);   color: #ffc107; }
+.badge--en_camino   { background: rgba(33,150,243,0.15);  color: #42a5f5; }
+.badge--cargando    { background: rgba(255,152,0,0.15);   color: #ffa726; }
+.badge--descargando { background: rgba(156,39,176,0.15);  color: #ce93d8; }
+.badge--finalizado  { background: rgba(76,175,80,0.15);   color: #66bb6a; }
+.badge--cancelado   { background: rgba(244,67,54,0.15);   color: #ef5350; }
+/* keep legacy aliases for old data */
+.badge--en_curso    { background: rgba(33,150,243,0.15);  color: #42a5f5; }
+.badge--completado  { background: rgba(76,175,80,0.15);   color: #66bb6a; }
 .badge--admin      { background: rgba(186,53,52,0.15);  color: #e57373; }
 .badge--camionero  { background: rgba(120,120,120,0.15); color: #aaa; }
 

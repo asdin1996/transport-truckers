@@ -12,10 +12,12 @@ import NuevoViaje from './admin/NuevoViaje'
 const PER_PAGE = 10
 
 const ESTADO_LABELS = {
-  pendiente:  'Pendiente',
-  en_curso:   'En curso',
-  completado: 'Completado',
-  cancelado:  'Cancelado',
+  pendiente:   'Pendiente',
+  en_camino:   'En camino',
+  cargando:    'Cargando',
+  descargando: 'Descargando',
+  finalizado:  'Finalizado',
+  cancelado:   'Cancelado',
 }
 
 const SEARCH_FIELDS = [
@@ -129,7 +131,7 @@ export default function Viajes() {
   }
 
   const setField = (f) => (e) => setEditForm((prev) => ({ ...prev, [f]: e.target.value }))
-  const puedeEditar = (v) => isAdmin() || (v.estado === 'pendiente' && v.camionero?.user_id === user?.id)
+  const puedeEditar = (v) => isAdmin() || (['pendiente', 'en_camino'].includes(v.estado) && v.camionero?.user_id === user?.id)
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
   if (error)   return <div className="alert alert--error">{error}</div>
@@ -148,7 +150,7 @@ export default function Viajes() {
 
       {/* Filtros de estado */}
       <div className="filter-tabs">
-        {['todos', 'pendiente', 'en_curso', 'completado', 'cancelado'].map((e) => (
+        {['todos', 'pendiente', 'en_camino', 'cargando', 'descargando', 'finalizado', 'cancelado'].map((e) => (
           <button
             key={e}
             className={`filter-tab${filtro === e ? ' active' : ''}`}
@@ -296,8 +298,10 @@ export default function Viajes() {
                       <label>Estado</label>
                       <select value={editForm.estado} onChange={setField('estado')}>
                         <option value="pendiente">Pendiente</option>
-                        <option value="en_curso">En curso</option>
-                        <option value="completado">Completado</option>
+                        <option value="en_camino">En camino</option>
+                        <option value="cargando">Cargando</option>
+                        <option value="descargando">Descargando</option>
+                        <option value="finalizado">Finalizado</option>
                         <option value="cancelado">Cancelado</option>
                       </select>
                     </div>
