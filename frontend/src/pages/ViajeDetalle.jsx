@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getViaje, cambiarEstado, updateViaje } from '../services/viajes'
-import { getGestiones, createGestion, updateGestion, deleteGestion } from '../services/gestiones'
 import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
 import { getParadas } from '../services/paradas'
@@ -49,13 +48,22 @@ function formatHora(dt) {
   return new Date(dt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
 }
 
+function InfoField({ label, children, full }) {
+  return (
+    <div className={`info-field${full ? ' info-field--full' : ''}`}>
+      <span className="info-field__label">{label}</span>
+      <span className="info-field__value">{children ?? '—'}</span>
+    </div>
+  )
+}
+
 function TripStepper({ estado, tipo }) {
   const flujo = getFlujo(tipo)
   const currentIdx = flujo.indexOf(estado)
 
   return (
     <div style={{ padding: '20px 0 8px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {flujo.map((step, i) => {
           const done   = i < currentIdx
           const active = i === currentIdx
@@ -110,7 +118,6 @@ export default function ViajeDetalle() {
   const navigate = useNavigate()
 
   const [viaje, setViaje]           = useState(null)
-  const [gestiones, setGestiones]   = useState([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(null)
   const [accionando, setAccionando] = useState(false)
@@ -121,19 +128,9 @@ export default function ViajeDetalle() {
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError]   = useState(null)
 
-  const [nuevoTexto, setNuevoTexto] = useState('')
-  const [guardando, setGuardando]   = useState(false)
-
-  const [editandoId, setEditandoId]       = useState(null)
-  const [editTexto, setEditTexto]         = useState('')
-  const [guardandoEdit, setGuardandoEdit] = useState(false)
-
   const cargar = () =>
-    Promise.all([getViaje(id), getGestiones(id)])
-      .then(([vRes, gRes]) => {
-        setViaje(vRes.data.data)
-        setGestiones(gRes.data.data ?? [])
-      })
+    getViaje(id)
+      .then((res) => setViaje(res.data.data))
       .catch(() => setError('Error al cargar el viaje.'))
       .finally(() => setLoading(false))
 
@@ -203,59 +200,13 @@ export default function ViajeDetalle() {
     }
   }
 
-  const handleAddGestion = async (e) => {
-    e.preventDefault()
-    if (!nuevoTexto.trim()) return
-    setGuardando(true)
-    try {
-      const res = await createGestion(id, { contenido: nuevoTexto.trim() })
-      setGestiones((prev) => [res.data.data, ...prev])
-      setNuevoTexto('')
-    } catch {
-      setError('No se pudo añadir la gestión.')
-    } finally {
-      setGuardando(false)
-    }
-  }
-
-  const handleStartEdit = (g) => {
-    setEditandoId(g.id)
-    setEditTexto(g.contenido)
-  }
-
-  const handleSaveEdit = async (gestionId) => {
-    if (!editTexto.trim()) return
-    setGuardandoEdit(true)
-    try {
-      await updateGestion(id, gestionId, { contenido: editTexto.trim() })
-      setGestiones((prev) =>
-        prev.map((g) => g.id === gestionId ? { ...g, contenido: editTexto.trim() } : g)
-      )
-      setEditandoId(null)
-    } catch {
-      setError('No se pudo guardar la gestión.')
-    } finally {
-      setGuardandoEdit(false)
-    }
-  }
-
-  const handleDeleteGestion = async (gestionId) => {
-    if (!confirm('¿Eliminar esta gestión?')) return
-    try {
-      await deleteGestion(id, gestionId)
-      setGestiones((prev) => prev.filter((g) => g.id !== gestionId))
-    } catch {
-      setError('No se pudo eliminar la gestión.')
-    }
-  }
-
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
   if (error)   return <div className="alert alert--error">{error}</div>
   if (!viaje)  return null
 
   const siguienteEstado = getSiguienteEstado(viaje.estado, viaje.tipo)
   const puedeAccionar   = isAdmin() || viaje.camionero?.user_id === user?.id
-  const puedeEditar     = isAdmin() || (viaje.estado === 'pendiente' && viaje.camionero?.user_id === user?.id)
+  const puedeEditar     = isAdmin() || (['pendiente', 'en_camino'].includes(viaje.estado) && viaje.camionero?.user_id === user?.id)
 
   return (
     <div>
@@ -264,13 +215,11 @@ export default function ViajeDetalle() {
           <button className="btn btn--ghost btn--sm" onClick={() => navigate(-1)}>← Volver</button>
           <h2 style={{ margin: 0 }}>{viaje.origen ?? '?'} → {viaje.destino ?? '?'}</h2>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {puedeEditar && (
-            <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(viaje)}>
-              Editar
-            </button>
-          )}
-        </div>
+        {puedeEditar && (
+          <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(viaje)}>
+            Editar
+          </button>
+        )}
       </div>
 
       {/* Stepper + acción principal */}
@@ -283,7 +232,6 @@ export default function ViajeDetalle() {
                 className={`btn btn--lg ${siguienteEstado === 'finalizado' ? 'btn--success' : 'btn--primary'}`}
                 onClick={handleCambiarEstado}
                 disabled={accionando}
-                style={{ minWidth: 200, padding: '12px 32px', fontSize: 15, fontWeight: 600 }}
               >
                 {accionando ? 'Actualizando…' : ACCION_LABEL[siguienteEstado]}
               </button>
@@ -297,133 +245,49 @@ export default function ViajeDetalle() {
         </div>
       )}
 
-      {/* Info del viaje */}
-      <div className="detail-grid">
-        <div className="card">
-          <p className="card__title">Información del viaje</p>
-          <dl className="detail-list">
-            <dt>Estado</dt>
-            <dd>
-              <span className={`badge badge--${viaje.estado}`}>
-                {ESTADO_LABELS[viaje.estado]}
-              </span>
-            </dd>
-            <dt>Tipo</dt>
-            <dd style={{ textTransform: 'capitalize' }}>{viaje.tipo ?? '—'}</dd>
-            <dt>Origen</dt>
-            <dd>{viaje.origen ?? '—'}</dd>
-            <dt>Destino</dt>
-            <dd>{viaje.destino ?? '—'}</dd>
-            <dt>Vehículo</dt>
-            <dd>{viaje.vehiculo?.matricula ?? '—'} {viaje.vehiculo?.marca} {viaje.vehiculo?.modelo}</dd>
-            <dt>Fecha prevista inicio</dt>
-            <dd>{viaje.fecha_inicio ? new Date(viaje.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</dd>
-            <dt>Fecha prevista fin</dt>
-            <dd>{viaje.fecha_fin ? new Date(viaje.fecha_fin + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</dd>
-            <dt>Inicio real</dt>
-            <dd>{formatHora(viaje.hora_inicio)}</dd>
-            <dt>Fin real</dt>
-            <dd>{formatHora(viaje.hora_fin)}</dd>
-            <dt>Duración</dt>
-            <dd>{formatDuracion(viaje.duracion_minutos)}</dd>
-            <dt>Notas</dt>
-            <dd>{viaje.notas ?? '—'}</dd>
-          </dl>
+      {/* Información del viaje */}
+      <div className="card">
+        <p className="card__title" style={{ marginBottom: 18 }}>Información del viaje</p>
+
+        <div className="form-row--3" style={{ marginBottom: 18 }}>
+          <InfoField label="Estado">
+            <span className={`badge badge--${viaje.estado}`}>{ESTADO_LABELS[viaje.estado]}</span>
+          </InfoField>
+          <InfoField label="Tipo" >{viaje.tipo ? viaje.tipo.charAt(0).toUpperCase() + viaje.tipo.slice(1) : '—'}</InfoField>
+          <InfoField label="Vehículo">
+            {viaje.vehiculo
+              ? `${viaje.vehiculo.matricula} · ${viaje.vehiculo.marca} ${viaje.vehiculo.modelo}`
+              : '—'}
+          </InfoField>
         </div>
-      </div>
 
-      {/* Gestiones */}
-      <div className="card" style={{ marginTop: 20 }}>
-        <p className="card__title" style={{ marginBottom: 14 }}>Gestiones</p>
+        <div className="form-row--3" style={{ marginBottom: 18 }}>
+          <InfoField label="Origen">{viaje.origen}</InfoField>
+          <InfoField label="Destino">{viaje.destino}</InfoField>
+          <InfoField label="Camionero">
+            {viaje.camionero ? `${viaje.camionero.nombre} ${viaje.camionero.apellidos}` : '—'}
+          </InfoField>
+        </div>
 
-        <form onSubmit={handleAddGestion} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <textarea
-            value={nuevoTexto}
-            onChange={(e) => setNuevoTexto(e.target.value)}
-            placeholder="Añadir una gestión o comentario…"
-            rows={2}
-            style={{
-              flex: 1,
-              background: 'var(--color-surface2)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 6,
-              color: 'var(--color-text)',
-              padding: '8px 10px',
-              fontSize: 13,
-              resize: 'vertical',
-            }}
-          />
-          <button
-            type="submit"
-            className="btn btn--primary btn--sm"
-            disabled={guardando || !nuevoTexto.trim()}
-            style={{ alignSelf: 'flex-end' }}
-          >
-            {guardando ? '…' : 'Añadir'}
-          </button>
-        </form>
+        <div className="form-row--3" style={{ marginBottom: 18 }}>
+          <InfoField label="Fecha prevista inicio">
+            {viaje.fecha_inicio ? new Date(viaje.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES') : '—'}
+          </InfoField>
+          <InfoField label="Fecha prevista fin">
+            {viaje.fecha_fin ? new Date(viaje.fecha_fin + 'T00:00:00').toLocaleDateString('es-ES') : '—'}
+          </InfoField>
+          <InfoField label="Duración real">{formatDuracion(viaje.duracion_minutos)}</InfoField>
+        </div>
 
-        {gestiones.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin gestiones registradas.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {gestiones.map((g) => (
-              <div
-                key={g.id}
-                style={{
-                  background: 'var(--color-surface2)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 6,
-                  padding: '10px 12px',
-                }}
-              >
-                {editandoId === g.id ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <textarea
-                      value={editTexto}
-                      onChange={(e) => setEditTexto(e.target.value)}
-                      rows={3}
-                      style={{
-                        background: 'var(--color-surface)',
-                        border: '1px solid var(--color-primary)',
-                        borderRadius: 4,
-                        color: 'var(--color-text)',
-                        padding: '6px 8px',
-                        fontSize: 13,
-                        resize: 'vertical',
-                      }}
-                    />
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button
-                        className="btn btn--primary btn--sm"
-                        onClick={() => handleSaveEdit(g.id)}
-                        disabled={guardandoEdit || !editTexto.trim()}
-                      >
-                        {guardandoEdit ? 'Guardando…' : 'Guardar'}
-                      </button>
-                      <button className="btn btn--ghost btn--sm" onClick={() => setEditandoId(null)}>
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p style={{ fontSize: 13, marginBottom: 6, whiteSpace: 'pre-wrap' }}>{g.contenido}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                        {g.user?.name ?? '—'} · {new Date(g.created_at).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}
-                      </span>
-                      {(user?.id === g.user_id || user?.role === 'admin') && (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn--ghost btn--sm" onClick={() => handleStartEdit(g)}>Editar</button>
-                          <button className="btn btn--danger btn--sm" onClick={() => handleDeleteGestion(g.id)}>Eliminar</button>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
+        <div className="form-row--3" style={{ marginBottom: 18 }}>
+          <InfoField label="Inicio real">{formatHora(viaje.hora_inicio)}</InfoField>
+          <InfoField label="Fin real">{formatHora(viaje.hora_fin)}</InfoField>
+          <div />
+        </div>
+
+        {viaje.notas && (
+          <div className="form-row--3">
+            <InfoField label="Notas" full>{viaje.notas}</InfoField>
           </div>
         )}
       </div>
