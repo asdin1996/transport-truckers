@@ -5,6 +5,7 @@ import { getViaje, cambiarEstado, updateViaje } from '../services/viajes'
 import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
 import { getParadas } from '../services/paradas'
+import Combobox from '../components/Combobox'
 
 const ESTADO_LABELS = {
   pendiente:   'Pendiente',
@@ -23,9 +24,10 @@ function getFlujo(tipo) {
 }
 
 function getSiguienteEstado(estado, tipo) {
-  if (estado === 'pendiente')  return 'en_camino'
-  if (estado === 'en_camino')  return tipo === 'descarga' ? 'descargando' : 'cargando'
-  if (estado === 'cargando' || estado === 'descargando') return 'finalizado'
+  if (estado === 'pendiente')                              return 'en_camino'
+  if (estado === 'en_camino' || estado === 'en_curso')    return tipo === 'descarga' ? 'descargando' : 'cargando'
+  if (estado === 'cargando'  || estado === 'descargando') return 'finalizado'
+  if (estado === 'completado')                            return null
   return null
 }
 
@@ -57,9 +59,12 @@ function InfoField({ label, children, full }) {
   )
 }
 
+const ESTADO_ALIAS = { en_curso: 'en_camino', completado: 'finalizado' }
+
 function TripStepper({ estado, tipo }) {
   const flujo = getFlujo(tipo)
-  const currentIdx = flujo.indexOf(estado)
+  const normalizado = ESTADO_ALIAS[estado] ?? estado
+  const currentIdx = flujo.indexOf(normalizado)
 
   return (
     <div style={{ padding: '20px 0 8px' }}>
@@ -205,7 +210,6 @@ export default function ViajeDetalle() {
   if (!viaje)  return null
 
   const siguienteEstado = getSiguienteEstado(viaje.estado, viaje.tipo)
-  const puedeAccionar   = isAdmin() || viaje.camionero?.user_id === user?.id
   const puedeEditar     = isAdmin() || (['pendiente', 'en_camino'].includes(viaje.estado) && viaje.camionero?.user_id === user?.id)
 
   return (
@@ -226,7 +230,7 @@ export default function ViajeDetalle() {
       {viaje.estado !== 'cancelado' && (
         <div className="card" style={{ marginBottom: 16 }}>
           <TripStepper estado={viaje.estado} tipo={viaje.tipo} />
-          {siguienteEstado && puedeAccionar && (
+          {siguienteEstado && (
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 16 }}>
               <button
                 className={`btn btn--lg ${siguienteEstado === 'finalizado' ? 'btn--success' : 'btn--primary'}`}
@@ -237,7 +241,7 @@ export default function ViajeDetalle() {
               </button>
             </div>
           )}
-          {viaje.estado === 'finalizado' && (
+          {(viaje.estado === 'finalizado' || viaje.estado === 'completado') && (
             <p style={{ textAlign: 'center', color: '#66bb6a', fontWeight: 600, paddingTop: 8, fontSize: 14 }}>
               Viaje completado
             </p>
@@ -349,17 +353,21 @@ export default function ViajeDetalle() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Origen</label>
-                      <input list="edit-paradas-origen" value={editForm.origen} onChange={setEdit('origen')} placeholder="Origen…" />
-                      <datalist id="edit-paradas-origen">
-                        {editOpts.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
-                      </datalist>
+                      <Combobox
+                        value={editForm.origen}
+                        onChange={(v) => setEditForm((p) => ({ ...p, origen: v }))}
+                        options={editOpts.paradas.map((p) => p.nombre)}
+                        placeholder="Buscar origen…"
+                      />
                     </div>
                     <div className="form-group">
                       <label>Destino</label>
-                      <input list="edit-paradas-destino" value={editForm.destino} onChange={setEdit('destino')} placeholder="Destino…" />
-                      <datalist id="edit-paradas-destino">
-                        {editOpts.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
-                      </datalist>
+                      <Combobox
+                        value={editForm.destino}
+                        onChange={(v) => setEditForm((p) => ({ ...p, destino: v }))}
+                        options={editOpts.paradas.map((p) => p.nombre)}
+                        placeholder="Buscar destino…"
+                      />
                     </div>
                   </div>
                   <div className="form-group">

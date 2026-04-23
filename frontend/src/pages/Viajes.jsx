@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import Combobox from '../components/Combobox'
 import { useAuth } from '../context/AuthContext'
 import { getViajes, updateViaje } from '../services/viajes'
 import { getCamioneros } from '../services/camioneros'
@@ -309,17 +310,21 @@ export default function Viajes() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Origen</label>
-                      <input list="edit-paradas-origen" value={editForm.origen} onChange={setField('origen')} placeholder="Origen…" />
-                      <datalist id="edit-paradas-origen">
-                        {editOpts.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
-                      </datalist>
+                      <Combobox
+                        value={editForm.origen}
+                        onChange={(v) => setEditForm((p) => ({ ...p, origen: v }))}
+                        options={editOpts.paradas.map((p) => p.nombre)}
+                        placeholder="Buscar origen…"
+                      />
                     </div>
                     <div className="form-group">
                       <label>Destino</label>
-                      <input list="edit-paradas-destino" value={editForm.destino} onChange={setField('destino')} placeholder="Destino…" />
-                      <datalist id="edit-paradas-destino">
-                        {editOpts.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
-                      </datalist>
+                      <Combobox
+                        value={editForm.destino}
+                        onChange={(v) => setEditForm((p) => ({ ...p, destino: v }))}
+                        options={editOpts.paradas.map((p) => p.nombre)}
+                        placeholder="Buscar destino…"
+                      />
                     </div>
                   </div>
                   <div className="form-group">

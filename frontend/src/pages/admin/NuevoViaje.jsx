@@ -3,9 +3,25 @@ import { getCamioneros } from '../../services/camioneros'
 import { getVehiculos } from '../../services/vehiculos'
 import { getParadas } from '../../services/paradas'
 import { createViaje } from '../../services/viajes'
+import Combobox from '../../components/Combobox'
 
-function now() {
-  return new Date().toISOString().slice(0, 16)
+function today() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function SectionLabel({ children }) {
+  return (
+    <p style={{
+      fontSize: 11,
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      letterSpacing: '0.07em',
+      color: 'var(--color-text-muted)',
+      margin: '6px 0 -2px',
+    }}>
+      {children}
+    </p>
+  )
 }
 
 export default function NuevoViaje({ onClose, onCreated }) {
@@ -17,8 +33,8 @@ export default function NuevoViaje({ onClose, onCreated }) {
     origen:       '',
     destino:      '',
     estado:       'pendiente',
-    fecha_inicio: now(),
-    fecha_fin:    now(),
+    fecha_inicio: today(),
+    fecha_fin:    '',
     notas:        '',
   })
   const [loading, setLoading] = useState(true)
@@ -39,6 +55,7 @@ export default function NuevoViaje({ onClose, onCreated }) {
   }, [])
 
   const set = (f) => (e) => setForm((prev) => ({ ...prev, [f]: e.target.value }))
+  const setVal = (f) => (val) => setForm((prev) => ({ ...prev, [f]: val }))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -46,7 +63,9 @@ export default function NuevoViaje({ onClose, onCreated }) {
     setError(null)
     try {
       const payload = { ...form }
-      if (!payload.notas) delete payload.notas
+      if (!payload.vehiculo_id) delete payload.vehiculo_id
+      if (!payload.fecha_fin)   delete payload.fecha_fin
+      if (!payload.notas)       delete payload.notas
       await createViaje(payload)
       onCreated?.()
       onClose()
@@ -58,11 +77,13 @@ export default function NuevoViaje({ onClose, onCreated }) {
     }
   }
 
+  const nombreParadas = options.paradas.map((p) => p.nombre)
+
   return (
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.6)',
+        background: 'rgba(0,0,0,0.65)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
       }}
@@ -71,17 +92,23 @@ export default function NuevoViaje({ onClose, onCreated }) {
       <div
         style={{
           background: 'var(--color-surface)',
-          borderRadius: 8,
+          borderRadius: 10,
           width: '100%',
-          maxWidth: 560,
-          maxHeight: '90vh',
+          maxWidth: 680,
+          maxHeight: '92vh',
           overflowY: 'auto',
-          padding: 24,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          padding: '28px 32px',
+          boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h3 style={{ margin: 0 }}>Nuevo viaje</h3>
+        {/* Cabecera */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 18 }}>Nuevo viaje</h3>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Completa los datos para registrar el viaje
+            </p>
+          </div>
           <button className="btn btn--ghost btn--sm" onClick={onClose}>✕</button>
         </div>
 
@@ -89,20 +116,43 @@ export default function NuevoViaje({ onClose, onCreated }) {
           <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
         ) : (
           <>
-            {error && <div className="alert alert--error" style={{ marginBottom: 12 }}>{error}</div>}
+            {error && <div className="alert alert--error" style={{ marginBottom: 16 }}>{error}</div>}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+              {/* Ruta */}
+              <SectionLabel>Ruta</SectionLabel>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Origen</label>
+                  <Combobox
+                    value={form.origen}
+                    onChange={setVal('origen')}
+                    options={nombreParadas}
+                    placeholder="Buscar origen…"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Destino</label>
+                  <Combobox
+                    value={form.destino}
+                    onChange={setVal('destino')}
+                    options={nombreParadas}
+                    placeholder="Buscar destino…"
+                  />
+                </div>
+              </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Tipo</label>
+                  <label>Tipo de viaje</label>
                   <select value={form.tipo} onChange={set('tipo')}>
                     <option value="carga">Carga</option>
                     <option value="descarga">Descarga</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Estado</label>
+                  <label>Estado inicial</label>
                   <select value={form.estado} onChange={set('estado')}>
                     <option value="pendiente">Pendiente</option>
                     <option value="en_camino">En camino</option>
@@ -110,72 +160,57 @@ export default function NuevoViaje({ onClose, onCreated }) {
                 </div>
               </div>
 
+              {/* Asignación */}
+              <SectionLabel>Asignación</SectionLabel>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Origen</label>
-                  <input
-                    list="paradas-origen"
-                    value={form.origen}
-                    onChange={set('origen')}
-                    placeholder="Seleccionar o escribir…"
-                  />
-                  <datalist id="paradas-origen">
-                    {options.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
-                  </datalist>
+                  <label>Camionero <span style={{ color: 'var(--color-primary)' }}>*</span></label>
+                  <select value={form.camionero_id} onChange={set('camionero_id')} required>
+                    <option value="">Seleccionar camionero…</option>
+                    {options.camioneros.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nombre} {c.apellidos}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group">
-                  <label>Destino</label>
-                  <input
-                    list="paradas-destino"
-                    value={form.destino}
-                    onChange={set('destino')}
-                    placeholder="Seleccionar o escribir…"
-                  />
-                  <datalist id="paradas-destino">
-                    {options.paradas.map((p) => <option key={p.id} value={p.nombre} />)}
-                  </datalist>
+                  <label>Vehículo</label>
+                  <select value={form.vehiculo_id} onChange={set('vehiculo_id')}>
+                    <option value="">Sin vehículo asignado</option>
+                    {options.vehiculos.map((v) => (
+                      <option key={v.id} value={v.id}>{v.matricula} — {v.marca} {v.modelo}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Camionero</label>
-                <select value={form.camionero_id} onChange={set('camionero_id')} required>
-                  <option value="">Seleccionar camionero…</option>
-                  {options.camioneros.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nombre} {c.apellidos}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Vehículo</label>
-                <select value={form.vehiculo_id} onChange={set('vehiculo_id')}>
-                  <option value="">Sin vehículo asignado</option>
-                  {options.vehiculos.map((v) => (
-                    <option key={v.id} value={v.id}>{v.matricula} — {v.marca} {v.modelo}</option>
-                  ))}
-                </select>
-              </div>
-
+              {/* Fechas */}
+              <SectionLabel>Fechas previstas</SectionLabel>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Fecha y hora inicio</label>
-                  <input type="datetime-local" value={form.fecha_inicio} onChange={set('fecha_inicio')} />
+                  <label>Fecha inicio</label>
+                  <input type="date" value={form.fecha_inicio} onChange={set('fecha_inicio')} />
                 </div>
                 <div className="form-group">
-                  <label>Fecha y hora fin estimada</label>
-                  <input type="datetime-local" value={form.fecha_fin} onChange={set('fecha_fin')} />
+                  <label>Fecha fin estimada</label>
+                  <input type="date" value={form.fecha_fin} onChange={set('fecha_fin')} />
                 </div>
               </div>
 
+              {/* Notas */}
               <div className="form-group">
-                <label>Notas (opcional)</label>
-                <textarea value={form.notas} onChange={set('notas')} placeholder="Instrucciones especiales…" rows={3} />
+                <label>Notas <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
+                <textarea value={form.notas} onChange={set('notas')} placeholder="Instrucciones especiales, observaciones…" rows={3} />
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
+              {/* Acciones */}
+              <div style={{
+                display: 'flex', gap: 10, justifyContent: 'flex-end',
+                paddingTop: 8,
+                borderTop: '1px solid var(--color-border)',
+                marginTop: 4,
+              }}>
                 <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>
-                <button type="submit" className="btn btn--primary" disabled={saving}>
+                <button type="submit" className="btn btn--primary" disabled={saving || !form.camionero_id}>
                   {saving ? 'Guardando…' : 'Crear viaje'}
                 </button>
               </div>
