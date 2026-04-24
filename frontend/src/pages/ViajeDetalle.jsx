@@ -6,6 +6,7 @@ import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
 import { getParadas } from '../services/paradas'
 import Combobox from '../components/Combobox'
+import Modal from '../components/Modal'
 
 const ESTADO_LABELS = {
   pendiente:   'Pendiente',
@@ -298,28 +299,7 @@ export default function ViajeDetalle() {
 
       {/* Modal edición */}
       {editModal && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 16,
-          }}
-          onClick={() => setEditModal(false)}
-        >
-          <div
-            style={{
-              background: 'var(--color-surface)',
-              borderRadius: 8,
-              width: '100%',
-              maxWidth: 520,
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: 24,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <Modal onClose={() => setEditModal(false)} maxWidth={560}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h3 style={{ margin: 0 }}>Editar viaje</h3>
               <button className="btn btn--ghost btn--sm" onClick={() => setEditModal(false)}>✕</button>
@@ -413,8 +393,7 @@ export default function ViajeDetalle() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

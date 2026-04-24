@@ -368,21 +368,21 @@ tbody tr:hover td { background: var(--color-surface2); }
   inset: 0;
   background: rgba(0,0,0,0.65);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  z-index: 200;
-  padding: 16px;
+  z-index: 1000;
+  padding: 24px 16px;
+  overflow-y: auto;
 }
 
 .modal {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  padding: 24px;
+  padding: 28px 32px;
   width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+  margin: auto;
 }
 
 .modal__header {
@@ -390,6 +390,11 @@ tbody tr:hover td { background: var(--color-surface2); }
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
+}
+
+@media (max-width: 540px) {
+  .modal-overlay { padding: 12px 8px; }
+  .modal { padding: 20px 16px; border-radius: 10px; }
 }
 
 .modal__header h3 { font-size: 16px; }

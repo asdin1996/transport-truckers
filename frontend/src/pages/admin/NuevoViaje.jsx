@@ -4,6 +4,7 @@ import { getVehiculos } from '../../services/vehiculos'
 import { getParadas } from '../../services/paradas'
 import { createViaje } from '../../services/viajes'
 import Combobox from '../../components/Combobox'
+import Modal from '../../components/Modal'
 
 function today() {
   return new Date().toISOString().slice(0, 10)
@@ -80,29 +81,8 @@ export default function NuevoViaje({ onClose, onCreated }) {
   const nombreParadas = options.paradas.map((p) => p.nombre)
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.65)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 16,
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div
-        style={{
-          background: 'var(--color-surface)',
-          borderRadius: 10,
-          width: '100%',
-          maxWidth: 680,
-          maxHeight: '92vh',
-          overflowY: 'auto',
-          padding: '28px 32px',
-          boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
-        }}
-      >
-        {/* Cabecera */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+    <Modal onClose={onClose} maxWidth={720}>
+        <div className="modal__header">
           <div>
             <h3 style={{ margin: 0, fontSize: 18 }}>Nuevo viaje</h3>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--color-text-muted)' }}>
@@ -217,7 +197,6 @@ export default function NuevoViaje({ onClose, onCreated }) {
             </form>
           </>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }

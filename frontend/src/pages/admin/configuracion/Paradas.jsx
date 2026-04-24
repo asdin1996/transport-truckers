@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { getParadas, createParada, deleteParada } from '../../../services/paradas'
 import Pagination from '../../../components/Pagination'
 import api from '../../../services/api'
+import Modal from '../../../components/Modal'
 
 const PER_PAGE = 10
 
@@ -162,26 +163,7 @@ export default function Paradas() {
 
       {/* Modal — Nueva parada */}
       {modalNueva && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 16,
-          }}
-          onClick={() => setModalNueva(false)}
-        >
-          <div
-            style={{
-              background: 'var(--color-surface)',
-              borderRadius: 8,
-              width: '100%',
-              maxWidth: 440,
-              padding: 24,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <Modal onClose={() => setModalNueva(false)} maxWidth={440}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h3 style={{ margin: 0 }}>Nueva parada</h3>
               <button className="btn btn--ghost btn--sm" onClick={() => setModalNueva(false)}>✕</button>
@@ -207,33 +189,13 @@ export default function Paradas() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Modal>
       )}
 
       {/* Modal — Importar Excel */}
       {modalImport && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 16,
-          }}
-          onClick={() => setModalImport(false)}
-        >
-          <div
-            style={{
-              background: 'var(--color-surface)',
-              borderRadius: 8,
-              width: '100%',
-              maxWidth: 480,
-              padding: 24,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <Modal onClose={() => setModalImport(false)} maxWidth={480}>
+            <div className="modal__header">
               <h3 style={{ margin: 0 }}>Importar paradas</h3>
               <button className="btn btn--ghost btn--sm" onClick={() => setModalImport(false)}>✕</button>
             </div>
@@ -267,8 +229,7 @@ export default function Paradas() {
                 {importing ? 'Importando…' : 'Importar'}
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
