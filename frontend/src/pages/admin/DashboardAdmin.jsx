@@ -1,29 +1,54 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getViajes } from '../../services/viajes'
+import { getViajes, cambiarEstado } from '../../services/viajes'
+import Pagination from '../../components/Pagination'
 import NuevoViaje from './NuevoViaje'
 
-function startOfWeek() {
-  const d = new Date()
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  const lunes = new Date(d.setDate(diff))
-  lunes.setHours(0, 0, 0, 0)
-  return lunes
+const PER_PAGE = 10
+
+const ESTADO_LABELS_ACTIVO = {
+  en_camino:   'En camino',
+  cargando:    'Cargando',
+  descargando: 'Descargando',
 }
 
-function endOfWeek() {
-  const lunes = startOfWeek()
-  const domingo = new Date(lunes)
-  domingo.setDate(lunes.getDate() + 6)
-  domingo.setHours(23, 59, 59, 999)
-  return domingo
+function filtrar(lista, q) {
+  if (!q) return lista
+  const ql = q.toLowerCase()
+  return lista.filter((v) =>
+    `${v.camionero?.nombre ?? ''} ${v.camionero?.apellidos ?? ''}`.toLowerCase().includes(ql) ||
+    (v.origen  ?? '').toLowerCase().includes(ql) ||
+    (v.destino ?? '').toLowerCase().includes(ql) ||
+    (v.vehiculo?.matricula ?? '').toLowerCase().includes(ql)
+  )
+}
+
+function SearchInput({ value, onChange, placeholder }) {
+  return (
+    <div className="table-search">
+      <span className="table-search__icon">⌕</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  )
 }
 
 export default function DashboardAdmin() {
-  const [viajes, setViajes]         = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [modalOpen, setModalOpen]   = useState(false)
+  const [viajes, setViajes]       = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
+
+  const [qActivos, setQActivos]       = useState('')
+  const [pageActivos, setPageActivos] = useState(1)
+
+  const [qPend, setQPend]       = useState('')
+  const [pagePend, setPagePend] = useState(1)
+
+  const [comenzando, setComenzando] = useState(null)
 
   const cargar = () =>
     getViajes()
@@ -33,19 +58,29 @@ export default function DashboardAdmin() {
 
   useEffect(() => { cargar() }, [])
 
+  const handleComenzar = async (v) => {
+    setComenzando(v.id)
+    try {
+      await cambiarEstado(v.id, 'en_camino')
+      await cargar()
+    } catch {
+      /* silencioso — el backend responde con error si no autorizado */
+    } finally {
+      setComenzando(null)
+    }
+  }
+
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
   const activos     = viajes.filter((v) => ['en_camino', 'cargando', 'descargando'].includes(v.estado))
+  const pendientes  = viajes.filter((v) => v.estado === 'pendiente')
   const finalizados = viajes.filter((v) => v.estado === 'finalizado')
 
-  const inicio  = startOfWeek()
-  const fin     = endOfWeek()
-  const pendientesSemana = viajes.filter((v) => {
-    if (v.estado !== 'pendiente') return false
-    if (!v.fecha_inicio) return true
-    const f = new Date(v.fecha_inicio + 'T00:00:00')
-    return f >= inicio && f <= fin
-  })
+  const activosFiltrados  = filtrar(activos, qActivos)
+  const pendFiltrados     = filtrar(pendientes, qPend)
+
+  const activosPage = activosFiltrados.slice((pageActivos - 1) * PER_PAGE, pageActivos * PER_PAGE)
+  const pendPage    = pendFiltrados.slice((pagePend - 1) * PER_PAGE, pagePend * PER_PAGE)
 
   return (
     <div>
@@ -57,16 +92,25 @@ export default function DashboardAdmin() {
       </div>
 
       <div className="stats-row" style={{ marginBottom: 20 }}>
-        <StatCard label="Viajes activos"     value={activos.length}          color="var(--color-primary)" to="/viajes?estado=en_camino" />
-        <StatCard label="Viajes pendientes"  value={pendientesSemana.length} color="#ffc107"           to="/viajes?estado=pendiente" />
-        <StatCard label="Finalizados"        value={finalizados.length}      color="#66bb6a"           to="/viajes?estado=finalizado" />
+        <StatCard label="Viajes activos"    value={activos.length}    color="var(--color-primary)" to="/viajes?estado=en_camino" />
+        <StatCard label="Viajes pendientes" value={pendientes.length} color="#ffc107"              to="/viajes?estado=pendiente" />
+        <StatCard label="Finalizados"       value={finalizados.length} color="#66bb6a"             to="/viajes?estado=finalizado" />
       </div>
 
       {/* Viajes activos */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <p className="card__title">Viajes activos</p>
+        <div className="table-controls">
+          <p className="card__title" style={{ margin: 0 }}>Viajes activos</p>
+          <SearchInput value={qActivos} onChange={(v) => { setQActivos(v); setPageActivos(1) }} placeholder="Buscar…" />
+          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+            {activosFiltrados.length} resultado{activosFiltrados.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
         {activos.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No hay viajes activos.</p>
+        ) : activosFiltrados.length === 0 ? (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin resultados.</p>
         ) : (
           <div className="table-wrapper">
             <table>
@@ -80,7 +124,7 @@ export default function DashboardAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {activos.map((v) => (
+                {activosPage.map((v) => (
                   <tr key={v.id}>
                     <td>
                       {v.camionero?.nombre} {v.camionero?.apellidos}
@@ -92,7 +136,7 @@ export default function DashboardAdmin() {
                     <td>{v.destino ?? '—'}</td>
                     <td>
                       <span className={`badge badge--${v.estado}`}>
-                        {{ en_camino: 'En camino', cargando: 'Cargando', descargando: 'Descargando' }[v.estado]}
+                        {ESTADO_LABELS_ACTIVO[v.estado]}
                       </span>
                     </td>
                     <td>
@@ -102,15 +146,25 @@ export default function DashboardAdmin() {
                 ))}
               </tbody>
             </table>
+            <Pagination page={pageActivos} total={activosFiltrados.length} perPage={PER_PAGE} onChange={setPageActivos} />
           </div>
         )}
       </div>
 
-      {/* Viajes pendientes esta semana */}
+      {/* Viajes pendientes */}
       <div className="card">
-        <p className="card__title">Viajes pendientes — semana actual</p>
-        {pendientesSemana.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin viajes pendientes esta semana.</p>
+        <div className="table-controls">
+          <p className="card__title" style={{ margin: 0 }}>Viajes pendientes</p>
+          <SearchInput value={qPend} onChange={(v) => { setQPend(v); setPagePend(1) }} placeholder="Buscar…" />
+          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+            {pendFiltrados.length} resultado{pendFiltrados.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {pendientes.length === 0 ? (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin viajes pendientes.</p>
+        ) : pendFiltrados.length === 0 ? (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin resultados.</p>
         ) : (
           <div className="table-wrapper">
             <table>
@@ -124,7 +178,7 @@ export default function DashboardAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {pendientesSemana.map((v) => (
+                {pendPage.map((v) => (
                   <tr key={v.id}>
                     <td>
                       {v.camionero?.nombre} {v.camionero?.apellidos}
@@ -140,12 +194,24 @@ export default function DashboardAdmin() {
                         : '—'}
                     </td>
                     <td>
-                      <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">Ver</Link>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <button
+                          className="btn btn--primary btn--sm"
+                          title="Comenzar viaje"
+                          onClick={() => handleComenzar(v)}
+                          disabled={comenzando === v.id}
+                          style={{ minWidth: 32 }}
+                        >
+                          {comenzando === v.id ? '…' : '▶'}
+                        </button>
+                        <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">Ver</Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <Pagination page={pagePend} total={pendFiltrados.length} perPage={PER_PAGE} onChange={setPagePend} />
           </div>
         )}
       </div>
