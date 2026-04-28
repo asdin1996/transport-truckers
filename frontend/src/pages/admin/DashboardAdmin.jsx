@@ -86,7 +86,7 @@ export default function DashboardAdmin() {
     <div>
       <div className="page-header">
         <h2>Panel de Administración</h2>
-        <button className="btn btn--primary btn--sm" onClick={() => setModalOpen(true)}>
+        <button className="btn btn--primary" onClick={() => setModalOpen(true)} style={{ fontSize: 15, padding: '10px 24px', fontWeight: 600 }}>
           + Nuevo viaje
         </button>
       </div>
