@@ -144,7 +144,7 @@ export default function Viajes() {
       <div className="page-header">
         <h2>{isAdmin() ? 'Viajes' : 'Mis Viajes'}</h2>
         {isAdmin() && (
-          <button className="btn btn--primary btn--sm" onClick={() => setModalNuevo(true)}>
+          <button className="btn btn--primary" onClick={() => setModalNuevo(true)} style={{ fontSize: 15, padding: '10px 24px', fontWeight: 600 }}>
             + Nuevo viaje
           </button>
         )}
