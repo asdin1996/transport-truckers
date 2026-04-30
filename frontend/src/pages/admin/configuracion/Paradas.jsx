@@ -94,14 +94,16 @@ export default function Paradas() {
         <h2>Paradas</h2>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
-            className="btn btn--ghost btn--sm"
+            className="btn btn--ghost"
             onClick={() => { setModalImport(true); setImportMsg(null); setImportError(null) }}
+            style={{ fontSize: 15, padding: '10px 24px', fontWeight: 600 }}
           >
             ⬆ Importar
           </button>
           <button
-            className="btn btn--primary btn--sm"
+            className="btn btn--primary"
             onClick={() => { setModalNueva(true); setNombre(''); setError(null) }}
+            style={{ fontSize: 15, padding: '10px 24px', fontWeight: 600 }}
           >
             + Nueva
           </button>
