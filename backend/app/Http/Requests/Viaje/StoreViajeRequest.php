@@ -19,7 +19,7 @@ class StoreViajeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'camionero_id' => ['required', 'exists:camioneros,id'],
+            'camionero_id' => ['nullable', 'exists:camioneros,id'],
             'vehiculo_id'  => ['nullable', 'exists:vehiculos,id'],
             'tipo'         => ['sometimes', 'in:' . implode(',', Viaje::TIPOS)],
             'origen'       => ['nullable', 'string', 'max:255'],

@@ -19,7 +19,7 @@ class UpdateViajeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'camionero_id' => ['sometimes', 'exists:camioneros,id'],
+            'camionero_id' => ['sometimes', 'nullable', 'exists:camioneros,id'],
             'vehiculo_id'  => ['nullable', 'exists:vehiculos,id'],
             'tipo'         => ['sometimes', 'in:' . implode(',', Viaje::TIPOS)],
             'origen'       => ['nullable', 'string', 'max:255'],

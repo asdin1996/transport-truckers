@@ -35,7 +35,6 @@ export default function NuevoViaje({ onClose, onCreated }) {
     destino:      '',
     estado:       'pendiente',
     fecha_inicio: today(),
-    fecha_fin:    '',
     notas:        '',
   })
   const [loading, setLoading] = useState(true)
@@ -64,8 +63,8 @@ export default function NuevoViaje({ onClose, onCreated }) {
     setError(null)
     try {
       const payload = { ...form }
+      if (!payload.camionero_id) delete payload.camionero_id
       if (!payload.vehiculo_id) delete payload.vehiculo_id
-      if (!payload.fecha_fin)   delete payload.fecha_fin
       if (!payload.notas)       delete payload.notas
       await createViaje(payload)
       onCreated?.()
@@ -144,16 +143,16 @@ export default function NuevoViaje({ onClose, onCreated }) {
               <SectionLabel>Asignación</SectionLabel>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Camionero <span style={{ color: 'var(--color-primary)' }}>*</span></label>
-                  <select value={form.camionero_id} onChange={set('camionero_id')} required>
-                    <option value="">Seleccionar camionero…</option>
+                  <label>Camionero <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
+                  <select value={form.camionero_id} onChange={set('camionero_id')}>
+                    <option value="">Sin asignar</option>
                     {options.camioneros.map((c) => (
                       <option key={c.id} value={c.id}>{c.nombre} {c.apellidos}</option>
                     ))}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Vehículo</label>
+                  <label>Vehículo <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
                   <select value={form.vehiculo_id} onChange={set('vehiculo_id')}>
                     <option value="">Sin vehículo asignado</option>
                     {options.vehiculos.map((v) => (
@@ -165,15 +164,9 @@ export default function NuevoViaje({ onClose, onCreated }) {
 
               {/* Fechas */}
               <SectionLabel>Fechas previstas</SectionLabel>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Fecha inicio</label>
-                  <input type="date" value={form.fecha_inicio} onChange={set('fecha_inicio')} />
-                </div>
-                <div className="form-group">
-                  <label>Fecha fin estimada</label>
-                  <input type="date" value={form.fecha_fin} onChange={set('fecha_fin')} />
-                </div>
+              <div className="form-group">
+                <label>Fecha inicio</label>
+                <input type="date" value={form.fecha_inicio} onChange={set('fecha_inicio')} />
               </div>
 
               {/* Notas */}
@@ -190,7 +183,7 @@ export default function NuevoViaje({ onClose, onCreated }) {
                 marginTop: 4,
               }}>
                 <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>
-                <button type="submit" className="btn btn--primary" disabled={saving || !form.camionero_id}>
+                <button type="submit" className="btn btn--primary" disabled={saving}>
                   {saving ? 'Guardando…' : 'Crear viaje'}
                 </button>
               </div>

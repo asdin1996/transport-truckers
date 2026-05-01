@@ -47,9 +47,12 @@ class ViajeService extends BaseService
             $data['hora_inicio'] = now();
         }
 
-        if ($status === 'finalizado' && $viaje->hora_inicio) {
-            $data['hora_fin'] = now();
-            $data['duracion_minutos'] = (int) $viaje->hora_inicio->diffInMinutes(now());
+        if ($status === 'finalizado') {
+            $data['fecha_fin'] = now()->toDateString();
+            if ($viaje->hora_inicio) {
+                $data['hora_fin'] = now();
+                $data['duracion_minutos'] = (int) $viaje->hora_inicio->diffInMinutes(now());
+            }
         }
 
         return $this->repository->update($viaje->id, $data);

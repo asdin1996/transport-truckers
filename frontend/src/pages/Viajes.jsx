@@ -10,6 +10,7 @@ import { getParadas } from '../services/paradas'
 import Pagination from '../components/Pagination'
 import useTableFilter from '../hooks/useTableFilter'
 import NuevoViaje from './admin/NuevoViaje'
+import ExportarViajes from '../components/ExportarViajes'
 
 const PER_PAGE = 10
 
@@ -53,7 +54,8 @@ export default function Viajes() {
   const [error, setError]       = useState(null)
   const [filtro, setFiltro]     = useState(searchParams.get('estado') ?? 'todos')
   const [page, setPage]         = useState(1)
-  const [modalNuevo, setModalNuevo] = useState(false)
+  const [modalNuevo, setModalNuevo]       = useState(false)
+  const [modalExportar, setModalExportar] = useState(false)
 
   const [editModal, setEditModal]   = useState(false)
   const [editViaje, setEditViaje]   = useState(null)
@@ -143,11 +145,16 @@ export default function Viajes() {
       {/* Cabecera */}
       <div className="page-header">
         <h2>{isAdmin() ? 'Viajes' : 'Mis Viajes'}</h2>
-        {isAdmin() && (
-          <button className="btn btn--primary" onClick={() => setModalNuevo(true)} style={{ fontSize: 15, padding: '10px 24px', fontWeight: 600 }}>
-            + Nuevo viaje
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn--ghost" onClick={() => setModalExportar(true)} style={{ fontSize: 15, padding: '10px 20px', fontWeight: 600 }}>
+            ↓ Exportar
           </button>
-        )}
+          {isAdmin() && (
+            <button className="btn btn--primary" onClick={() => setModalNuevo(true)} style={{ fontSize: 15, padding: '10px 24px', fontWeight: 600 }}>
+              + Nuevo viaje
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filtros de estado */}
@@ -254,6 +261,14 @@ export default function Viajes() {
         />
       )}
 
+      {/* Modal exportar */}
+      {modalExportar && (
+        <ExportarViajes
+          viajes={viajes}
+          onClose={() => setModalExportar(false)}
+        />
+      )}
+
       {/* Modal edición */}
       {editModal && (
         <Modal onClose={() => setEditModal(false)} maxWidth={560}>
@@ -308,9 +323,9 @@ export default function Viajes() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label>Camionero</label>
-                    <select value={editForm.camionero_id} onChange={setField('camionero_id')} required>
-                      <option value="">Seleccionar…</option>
+                    <label>Camionero <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
+                    <select value={editForm.camionero_id} onChange={setField('camionero_id')}>
+                      <option value="">Sin asignar</option>
                       {editOpts.camioneros.map((c) => (
                         <option key={c.id} value={c.id}>{c.nombre} {c.apellidos}</option>
                       ))}

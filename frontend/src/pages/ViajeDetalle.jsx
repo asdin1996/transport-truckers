@@ -43,7 +43,9 @@ function formatDuracion(minutos) {
   if (!minutos) return '—'
   const h = Math.floor(minutos / 60)
   const m = minutos % 60
-  return h > 0 ? `${h}h ${m}min` : `${m}min`
+  if (h > 0 && m > 0) return `${h}h ${String(m).padStart(2, '0')}min`
+  if (h > 0)          return `${h}h`
+  return `${m} min`
 }
 
 function formatHora(dt) {
@@ -351,9 +353,9 @@ export default function ViajeDetalle() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label>Camionero</label>
-                    <select value={editForm.camionero_id} onChange={setEdit('camionero_id')} required>
-                      <option value="">Seleccionar…</option>
+                    <label>Camionero <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
+                    <select value={editForm.camionero_id} onChange={setEdit('camionero_id')}>
+                      <option value="">Sin asignar</option>
                       {editOpts.camioneros.map((c) => (
                         <option key={c.id} value={c.id}>{c.nombre} {c.apellidos}</option>
                       ))}

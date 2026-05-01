@@ -1,3 +1,75 @@
+/* ── DatePicker dark theme ──────────────────────────────────── */
+.datepicker-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.datepicker-calendar {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+  font-family: inherit !important;
+  z-index: 9100 !important;
+}
+
+.datepicker-calendar .react-datepicker__header {
+  background: var(--color-surface2) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  border-radius: 10px 10px 0 0 !important;
+  padding-top: 10px !important;
+}
+
+.datepicker-calendar .react-datepicker__current-month,
+.datepicker-calendar .react-datepicker__day-name,
+.datepicker-calendar .react-datepicker-time__header {
+  color: var(--color-text) !important;
+}
+
+.datepicker-calendar .react-datepicker__day {
+  color: var(--color-text) !important;
+  border-radius: 6px !important;
+}
+
+.datepicker-calendar .react-datepicker__day:hover {
+  background: var(--color-surface2) !important;
+  color: var(--color-text) !important;
+}
+
+.datepicker-calendar .react-datepicker__day--selected,
+.datepicker-calendar .react-datepicker__day--range-start,
+.datepicker-calendar .react-datepicker__day--range-end {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+.datepicker-calendar .react-datepicker__day--in-range {
+  background: rgba(186,53,52,0.15) !important;
+  color: var(--color-text) !important;
+}
+
+.datepicker-calendar .react-datepicker__day--in-selecting-range {
+  background: rgba(186,53,52,0.2) !important;
+}
+
+.datepicker-calendar .react-datepicker__day--outside-month {
+  color: var(--color-text-muted) !important;
+}
+
+.datepicker-calendar .react-datepicker__day--disabled {
+  color: var(--color-border) !important;
+}
+
+.datepicker-calendar .react-datepicker__navigation-icon::before {
+  border-color: var(--color-text-muted) !important;
+}
+
+.datepicker-calendar .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+  border-color: var(--color-text) !important;
+}
+
+.react-datepicker-popper { z-index: 9100 !important; }
+
 /* ── Login ─────────────────────────────────────────────────── */
 .login-page {
   min-height: 100vh;

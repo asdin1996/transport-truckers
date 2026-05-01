@@ -1,11 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 
+// options: string[] | { value, label }[]
+// value: el valor seleccionado (string o el .value del objeto)
+// onChange(value): recibe el value seleccionado
 export default function Combobox({ value, onChange, options = [], placeholder = 'Buscar…' }) {
+  const normalize = (o) => typeof o === 'string' ? { value: o, label: o } : o
+
+  const normalized = options.map(normalize)
+  const selected   = normalized.find((o) => o.value === value)
+
+  const [query, setQuery] = useState(selected?.label ?? '')
   const [open, setOpen]   = useState(false)
-  const [query, setQuery] = useState(value ?? '')
   const ref = useRef(null)
 
-  useEffect(() => { setQuery(value ?? '') }, [value])
+  useEffect(() => {
+    setQuery(selected?.label ?? (value ?? ''))
+  }, [value])
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -13,11 +23,15 @@ export default function Combobox({ value, onChange, options = [], placeholder = 
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
-  const filtered = options
-    .filter((o) => o.toLowerCase().includes(query.toLowerCase()))
+  const filtered = normalized
+    .filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     .slice(0, 25)
 
-  const select = (val) => { setQuery(val); onChange(val); setOpen(false) }
+  const select = (opt) => {
+    setQuery(opt.label)
+    onChange(opt.value)
+    setOpen(false)
+  }
 
   const handleChange = (e) => {
     setQuery(e.target.value)
@@ -54,19 +68,19 @@ export default function Combobox({ value, onChange, options = [], placeholder = 
         }}>
           {filtered.map((opt) => (
             <li
-              key={opt}
+              key={opt.value}
               onMouseDown={() => select(opt)}
               style={{
                 padding: '8px 14px',
                 cursor: 'pointer',
                 fontSize: 13,
-                color: opt === value ? 'var(--color-primary)' : 'var(--color-text)',
-                fontWeight: opt === value ? 600 : 400,
+                color: opt.value === value ? 'var(--color-primary)' : 'var(--color-text)',
+                fontWeight: opt.value === value ? 600 : 400,
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface2)' }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
             >
-              {opt}
+              {opt.label}
             </li>
           ))}
         </ul>
