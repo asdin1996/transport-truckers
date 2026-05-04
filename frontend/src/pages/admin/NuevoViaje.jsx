@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import DatePicker, { registerLocale } from 'react-datepicker'
+import { es } from 'date-fns/locale/es'
+import 'react-datepicker/dist/react-datepicker.css'
 import { getCamioneros } from '../../services/camioneros'
 import { getVehiculos } from '../../services/vehiculos'
 import { getParadas } from '../../services/paradas'
@@ -6,9 +9,7 @@ import { createViaje } from '../../services/viajes'
 import Combobox from '../../components/Combobox'
 import Modal from '../../components/Modal'
 
-function today() {
-  return new Date().toISOString().slice(0, 10)
-}
+registerLocale('es', es)
 
 function SectionLabel({ children }) {
   return (
@@ -34,7 +35,7 @@ export default function NuevoViaje({ onClose, onCreated }) {
     origen:       '',
     destino:      '',
     estado:       'pendiente',
-    fecha_inicio: today(),
+    fecha_inicio: new Date(),
     notas:        '',
   })
   const [loading, setLoading] = useState(true)
@@ -63,6 +64,8 @@ export default function NuevoViaje({ onClose, onCreated }) {
     setError(null)
     try {
       const payload = { ...form }
+      if (payload.fecha_inicio instanceof Date)
+        payload.fecha_inicio = payload.fecha_inicio.toISOString().slice(0, 10)
       if (!payload.camionero_id) delete payload.camionero_id
       if (!payload.vehiculo_id) delete payload.vehiculo_id
       if (!payload.notas)       delete payload.notas
@@ -166,7 +169,16 @@ export default function NuevoViaje({ onClose, onCreated }) {
               <SectionLabel>Fechas previstas</SectionLabel>
               <div className="form-group">
                 <label>Fecha inicio</label>
-                <input type="date" value={form.fecha_inicio} onChange={set('fecha_inicio')} />
+                <DatePicker
+                  locale="es"
+                  selected={form.fecha_inicio}
+                  onChange={(date) => setForm((p) => ({ ...p, fecha_inicio: date }))}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Seleccionar fecha…"
+                  isClearable
+                  className="datepicker-input"
+                  calendarClassName="datepicker-calendar"
+                />
               </div>
 
               {/* Notas */}

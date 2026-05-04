@@ -13,7 +13,7 @@ class Viaje extends Model
 {
     use HasFactory, SoftDeletes;
 
-    const ESTADOS = ['pendiente', 'en_camino', 'cargando', 'descargando', 'finalizado', 'cancelado'];
+    const ESTADOS = ['pendiente', 'en_camino', 'llegada_destino', 'cargando', 'descargando', 'finalizado', 'cancelado'];
 
     protected $fillable = [
         'camionero_id',

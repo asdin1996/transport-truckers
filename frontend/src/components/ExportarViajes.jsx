@@ -12,12 +12,13 @@ import { getParadas } from '../services/paradas'
 registerLocale('es', es)
 
 const ESTADO_LABELS = {
-  pendiente:   'Pendiente',
-  en_camino:   'En camino',
-  cargando:    'Cargando',
-  descargando: 'Descargando',
-  finalizado:  'Finalizado',
-  cancelado:   'Cancelado',
+  pendiente:       'Pendiente',
+  en_camino:       'En camino',
+  llegada_destino: 'Llegada a destino',
+  cargando:        'Cargando',
+  descargando:     'Descargando',
+  finalizado:      'Finalizado',
+  cancelado:       'Cancelado',
 }
 
 const ESTADOS = Object.keys(ESTADO_LABELS)

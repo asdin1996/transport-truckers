@@ -9,9 +9,10 @@ import NuevoViaje from './NuevoViaje'
 const PER_PAGE = 10
 
 const ESTADO_LABELS_ACTIVO = {
-  en_camino:   'En camino',
-  cargando:    'Cargando',
-  descargando: 'Descargando',
+  en_camino:       'En camino',
+  llegada_destino: 'Llegada a destino',
+  cargando:        'Cargando',
+  descargando:     'Descargando',
 }
 
 function filtrar(lista, q) {
@@ -132,7 +133,7 @@ export default function DashboardAdmin() {
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
-  const activos     = viajes.filter((v) => ['en_camino', 'cargando', 'descargando'].includes(v.estado))
+  const activos     = viajes.filter((v) => ['en_camino', 'llegada_destino', 'cargando', 'descargando'].includes(v.estado))
   const pendientes  = viajes.filter((v) => v.estado === 'pendiente')
   const finalizados = viajes.filter((v) => v.estado === 'finalizado')
   const sinAsignar  = pendientes.filter((v) => !v.camionero_id)
@@ -238,7 +239,7 @@ export default function DashboardAdmin() {
                 {activosPage.map((v) => {
                   // Viajes pendientes ya asignados a este camionero
                   // eslint-disable-next-line eqeqeq
-                  const pendientesDelCamionero = pendientes.filter((p) => p.camionero_id == v.camionero_id)
+                  const pendientesDelCamionero = pendientes.filter((p) => p.camionero_id == v.camionero_id).reverse()
                   // Opciones: solo los pendientes SIN camionero asignado (para no duplicar)
                   const opcionesDisponibles = opcionesProximo.filter(
                     // eslint-disable-next-line eqeqeq

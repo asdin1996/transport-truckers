@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import DatePicker, { registerLocale } from 'react-datepicker'
+import { es } from 'date-fns/locale/es'
+import 'react-datepicker/dist/react-datepicker.css'
 import Combobox from '../components/Combobox'
 import Modal from '../components/Modal'
 import { useAuth } from '../context/AuthContext'
+
+registerLocale('es', es)
 import { getViajes, updateViaje } from '../services/viajes'
 import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
@@ -15,12 +20,13 @@ import ExportarViajes from '../components/ExportarViajes'
 const PER_PAGE = 10
 
 const ESTADO_LABELS = {
-  pendiente:   'Pendiente',
-  en_camino:   'En camino',
-  cargando:    'Cargando',
-  descargando: 'Descargando',
-  finalizado:  'Finalizado',
-  cancelado:   'Cancelado',
+  pendiente:       'Pendiente',
+  en_camino:       'En camino',
+  llegada_destino: 'Llegada a destino',
+  cargando:        'Cargando',
+  descargando:     'Descargando',
+  finalizado:      'Finalizado',
+  cancelado:       'Cancelado',
 }
 
 const SEARCH_FIELDS = [
@@ -95,8 +101,8 @@ export default function Viajes() {
       origen:       v.origen       ?? '',
       destino:      v.destino      ?? '',
       estado:       v.estado       ?? 'pendiente',
-      fecha_inicio: v.fecha_inicio ? v.fecha_inicio.slice(0, 10) : '',
-      fecha_fin:    v.fecha_fin    ? v.fecha_fin.slice(0, 10)    : '',
+      fecha_inicio: v.fecha_inicio ? new Date(v.fecha_inicio + 'T00:00:00') : null,
+      fecha_fin:    v.fecha_fin    ? new Date(v.fecha_fin    + 'T00:00:00') : null,
       notas:        v.notas        ?? '',
     })
     if (!editOpts) {
@@ -120,6 +126,10 @@ export default function Viajes() {
     setEditError(null)
     try {
       const payload = { ...editForm }
+      if (payload.fecha_inicio instanceof Date)
+        payload.fecha_inicio = payload.fecha_inicio.toISOString().slice(0, 10)
+      if (payload.fecha_fin instanceof Date)
+        payload.fecha_fin = payload.fecha_fin.toISOString().slice(0, 10)
       if (!payload.fecha_inicio) delete payload.fecha_inicio
       if (!payload.fecha_fin)    delete payload.fecha_fin
       if (!payload.notas)        delete payload.notas
@@ -159,7 +169,7 @@ export default function Viajes() {
 
       {/* Filtros de estado */}
       <div className="filter-tabs">
-        {['todos', 'pendiente', 'en_camino', 'cargando', 'descargando', 'finalizado', 'cancelado'].map((e) => (
+        {['todos', 'pendiente', 'en_camino', 'llegada_destino', 'cargando', 'descargando', 'finalizado', 'cancelado'].map((e) => (
           <button
             key={e}
             className={`filter-tab${filtro === e ? ' active' : ''}`}
@@ -295,6 +305,7 @@ export default function Viajes() {
                       <select value={editForm.estado} onChange={setField('estado')}>
                         <option value="pendiente">Pendiente</option>
                         <option value="en_camino">En camino</option>
+                        <option value="llegada_destino">Llegada a destino</option>
                         <option value="cargando">Cargando</option>
                         <option value="descargando">Descargando</option>
                         <option value="finalizado">Finalizado</option>
@@ -343,11 +354,30 @@ export default function Viajes() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Fecha inicio</label>
-                      <input type="date" value={editForm.fecha_inicio} onChange={setField('fecha_inicio')} />
+                      <DatePicker
+                        locale="es"
+                        selected={editForm.fecha_inicio}
+                        onChange={(date) => setEditForm((p) => ({ ...p, fecha_inicio: date }))}
+                        dateFormat="dd/MM/yyyy"
+                        placeholderText="Seleccionar fecha…"
+                        isClearable
+                        className="datepicker-input"
+                        calendarClassName="datepicker-calendar"
+                      />
                     </div>
                     <div className="form-group">
                       <label>Fecha fin estimada</label>
-                      <input type="date" value={editForm.fecha_fin} onChange={setField('fecha_fin')} />
+                      <DatePicker
+                        locale="es"
+                        selected={editForm.fecha_fin}
+                        onChange={(date) => setEditForm((p) => ({ ...p, fecha_fin: date }))}
+                        minDate={editForm.fecha_inicio}
+                        dateFormat="dd/MM/yyyy"
+                        placeholderText="Seleccionar fecha…"
+                        isClearable
+                        className="datepicker-input"
+                        calendarClassName="datepicker-calendar"
+                      />
                     </div>
                   </div>
                 </>

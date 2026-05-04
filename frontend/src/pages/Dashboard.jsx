@@ -4,6 +4,18 @@ import { useAuth } from '../context/AuthContext'
 import { getViajes } from '../services/viajes'
 import { getGastos } from '../services/gastos'
 
+const ESTADOS_ACTIVOS = ['en_camino', 'llegada_destino', 'cargando', 'descargando']
+
+const ESTADO_LABELS = {
+  pendiente:       'Pendiente',
+  en_camino:       'En camino',
+  llegada_destino: 'Llegada a destino',
+  cargando:        'Cargando',
+  descargando:     'Descargando',
+  finalizado:      'Finalizado',
+  cancelado:       'Cancelado',
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
   const [viajes, setViajes] = useState([])
@@ -16,7 +28,7 @@ export default function Dashboard() {
         const todos = vRes.data.data ?? []
         setViajes(todos)
 
-        const activos = todos.filter((v) => v.estado === 'en_curso')
+        const activos = todos.filter((v) => ESTADOS_ACTIVOS.includes(v.estado))
         if (activos.length > 0) {
           return Promise.all(activos.map((v) => getGastos(v.id)))
         }
@@ -30,7 +42,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  const activos = viajes.filter((v) => v.estado === 'en_curso')
+  const activos    = viajes.filter((v) => ESTADOS_ACTIVOS.includes(v.estado))
   const pendientes = viajes.filter((v) => v.estado === 'pendiente')
 
   if (loading) {
@@ -46,7 +58,7 @@ export default function Dashboard() {
       <div className="dashboard-grid">
         {/* Estadísticas */}
         <div className="stats-row">
-          <StatCard label="Viajes en curso"   value={activos.length}    color="var(--color-primary)" to="/viajes?estado=en_curso" />
+          <StatCard label="Viajes en curso"   value={activos.length}    color="var(--color-primary)" to="/viajes?estado=en_camino" />
           <StatCard label="Viajes pendientes" value={pendientes.length}  color="#ffc107"              to="/viajes?estado=pendiente" />
           <StatCard label="Total viajes"      value={viajes.length}      color="#42a5f5"              to="/viajes" />
         </div>
@@ -62,6 +74,7 @@ export default function Dashboard() {
                 <thead>
                   <tr>
                     <th>Ruta</th>
+                    <th>Estado</th>
                     <th>Vehículo</th>
                     <th>Inicio</th>
                     <th></th>
@@ -70,9 +83,47 @@ export default function Dashboard() {
                 <tbody>
                   {activos.map((v) => (
                     <tr key={v.id}>
+                      <td>{v.origen ?? '—'} → {v.destino ?? '—'}</td>
                       <td>
-                        {v.ruta?.origen ?? '—'} → {v.ruta?.destino ?? '—'}
+                        <span className={`badge badge--${v.estado}`}>
+                          {ESTADO_LABELS[v.estado] ?? v.estado}
+                        </span>
                       </td>
+                      <td>{v.vehiculo?.matricula ?? '—'}</td>
+                      <td>{v.fecha_inicio ? new Date(v.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</td>
+                      <td>
+                        <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">
+                          Ver
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Viajes pendientes */}
+        <div className="card" style={{ marginTop: 20 }}>
+          <p className="card__title">Próximos viajes</p>
+          {pendientes.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No hay viajes pendientes.</p>
+          ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ruta</th>
+                    <th>Vehículo</th>
+                    <th>Fecha prevista</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendientes.map((v) => (
+                    <tr key={v.id}>
+                      <td>{v.origen ?? '—'} → {v.destino ?? '—'}</td>
                       <td>{v.vehiculo?.matricula ?? '—'}</td>
                       <td>{v.fecha_inicio ? new Date(v.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES') : '—'}</td>
                       <td>

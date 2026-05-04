@@ -9,34 +9,37 @@ import Combobox from '../components/Combobox'
 import Modal from '../components/Modal'
 
 const ESTADO_LABELS = {
-  pendiente:   'Pendiente',
-  en_camino:   'En camino',
-  cargando:    'Cargando',
-  descargando: 'Descargando',
-  finalizado:  'Finalizado',
-  cancelado:   'Cancelado',
+  pendiente:        'Pendiente',
+  en_camino:        'En camino',
+  llegada_destino:  'Llegada a destino',
+  cargando:         'Cargando',
+  descargando:      'Descargando',
+  finalizado:       'Finalizado',
+  cancelado:        'Cancelado',
 }
 
-const FLUJO_CARGA    = ['pendiente', 'en_camino', 'cargando',    'finalizado']
-const FLUJO_DESCARGA = ['pendiente', 'en_camino', 'descargando', 'finalizado']
+const FLUJO_CARGA    = ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado']
+const FLUJO_DESCARGA = ['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado']
 
 function getFlujo(tipo) {
   return tipo === 'descarga' ? FLUJO_DESCARGA : FLUJO_CARGA
 }
 
 function getSiguienteEstado(estado, tipo) {
-  if (estado === 'pendiente')                              return 'en_camino'
-  if (estado === 'en_camino' || estado === 'en_curso')    return tipo === 'descarga' ? 'descargando' : 'cargando'
-  if (estado === 'cargando'  || estado === 'descargando') return 'finalizado'
-  if (estado === 'completado')                            return null
+  if (estado === 'pendiente'       || estado === 'en_curso')   return 'en_camino'
+  if (estado === 'en_camino')                                  return 'llegada_destino'
+  if (estado === 'llegada_destino')                            return tipo === 'descarga' ? 'descargando' : 'cargando'
+  if (estado === 'cargando'        || estado === 'descargando') return 'finalizado'
+  if (estado === 'completado')                                 return null
   return null
 }
 
 const ACCION_LABEL = {
-  en_camino:   'Comenzar viaje',
-  cargando:    'Cargar mercancía',
-  descargando: 'Descargar mercancía',
-  finalizado:  'Finalizar viaje',
+  en_camino:        'Iniciar viaje',
+  llegada_destino:  'Llegada a destino',
+  cargando:         'Iniciar carga',
+  descargando:      'Iniciar descarga',
+  finalizado:       'Finalizar viaje',
 }
 
 function formatDuracion(minutos) {
@@ -325,6 +328,7 @@ export default function ViajeDetalle() {
                       <select value={editForm.estado} onChange={setEdit('estado')}>
                         <option value="pendiente">Pendiente</option>
                         <option value="en_camino">En camino</option>
+                        <option value="llegada_destino">Llegada a destino</option>
                         <option value="cargando">Cargando</option>
                         <option value="descargando">Descargando</option>
                         <option value="finalizado">Finalizado</option>
