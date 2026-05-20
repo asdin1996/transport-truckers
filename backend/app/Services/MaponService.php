@@ -266,6 +266,54 @@ class MaponService
         return $response->json('data.units') ?? [];
     }
 
+    public function syncZonas(): array
+    {
+        $key = Configuracion::get('mapon_api_key');
+        if (!$key) throw new \RuntimeException('API key no configurada');
+
+        try {
+            $response = Http::timeout(15)->get(self::BASE_URL . '/zone/list.json', ['key' => $key]);
+        } catch (ConnectionException $e) {
+            throw new \RuntimeException('No se pudo conectar con Mapon: ' . $e->getMessage());
+        }
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Error en la API de Mapon: HTTP ' . $response->status());
+        }
+
+        $zones = $response->json('data.zones') ?? $response->json('data') ?? [];
+
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+
+        foreach ($zones as $zone) {
+            $nombre = trim($zone['name'] ?? '');
+            if (!$nombre) { $skipped++; continue; }
+
+            $lat = $zone['centroid']['lat'] ?? $zone['center']['lat'] ?? null;
+            $lng = $zone['centroid']['lng'] ?? $zone['center']['lng']
+                ?? $zone['centroid']['lon'] ?? $zone['center']['lon'] ?? null;
+
+            if (!$lat && !$lng && !empty($zone['points'])) {
+                $lat = collect($zone['points'])->avg('lat');
+                $lng = collect($zone['points'])->avg(fn($p) => $p['lng'] ?? $p['lon'] ?? 0);
+            }
+
+            $existing = Parada::where('nombre', $nombre)->first();
+
+            if ($existing) {
+                $existing->update(array_filter(['lat' => $lat, 'lng' => $lng], fn($v) => $v !== null));
+                $updated++;
+            } else {
+                Parada::create(['nombre' => $nombre, 'lat' => $lat, 'lng' => $lng]);
+                $created++;
+            }
+        }
+
+        return ['total' => count($zones), 'created' => $created, 'updated' => $updated, 'skipped' => $skipped];
+    }
+
     public function hasApiKey(): bool
     {
         return !empty(Configuracion::get('mapon_api_key'));

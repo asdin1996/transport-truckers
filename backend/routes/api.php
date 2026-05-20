@@ -81,6 +81,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('role:admin');
     Route::post('mapon/sync/camioneros', [MaponController::class, 'syncCamioneros'])
         ->middleware('role:admin');
+    Route::post('mapon/sync/zonas', [MaponController::class, 'syncZonas'])
+        ->middleware('role:admin');
 
     // Configuración (solo admin)
     Route::middleware('role:admin')->group(function () {

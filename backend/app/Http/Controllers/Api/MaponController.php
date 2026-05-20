@@ -47,6 +47,16 @@ class MaponController extends Controller
         }
     }
 
+    public function syncZonas(): JsonResponse
+    {
+        try {
+            $stats = $this->service->syncZonas();
+            return response()->json(['status' => 'ok', 'data' => $stats]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 503);
+        }
+    }
+
     public function dashboard(): JsonResponse
     {
         try {

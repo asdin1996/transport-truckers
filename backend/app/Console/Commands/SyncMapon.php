@@ -27,5 +27,13 @@ class SyncMapon extends Command
         } catch (\RuntimeException $e) {
             $this->error('  Error camioneros: ' . $e->getMessage());
         }
+
+        $this->info('Sincronizando zonas…');
+        try {
+            $zon = $service->syncZonas();
+            $this->line("  Zonas: {$zon['created']} creadas, {$zon['updated']} actualizadas, {$zon['skipped']} omitidas");
+        } catch (\RuntimeException $e) {
+            $this->error('  Error zonas: ' . $e->getMessage());
+        }
     }
 }

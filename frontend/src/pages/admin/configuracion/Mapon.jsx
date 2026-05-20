@@ -11,6 +11,7 @@ export default function Mapon() {
 
   const [syncVeh, setSyncVeh] = useState({ loading: false, result: null, error: null })
   const [syncCam, setSyncCam] = useState({ loading: false, result: null, error: null })
+  const [syncZon, setSyncZon] = useState({ loading: false, result: null, error: null })
   const [primeraVez, setPrimeraVez] = useState(false)
 
   useEffect(() => {
@@ -54,6 +55,16 @@ export default function Mapon() {
       setSyncCam({ loading: false, result: res.data.data, error: null })
     } catch (err) {
       setSyncCam({ loading: false, result: null, error: err?.response?.data?.message ?? 'Error al sincronizar.' })
+    }
+  }
+
+  const handleSyncZonas = async () => {
+    setSyncZon({ loading: true, result: null, error: null })
+    try {
+      const res = await api.post('/mapon/sync/zonas')
+      setSyncZon({ loading: false, result: res.data.data, error: null })
+    } catch (err) {
+      setSyncZon({ loading: false, result: null, error: err?.response?.data?.message ?? 'Error al sincronizar.' })
     }
   }
 
@@ -151,6 +162,26 @@ export default function Mapon() {
             )}
             {syncCam.error && (
               <span style={{ fontSize: 13, color: '#ef4444' }}>{syncCam.error}</span>
+            )}
+          </div>
+
+          {/* Zonas → Paradas */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button
+              className="btn btn--primary"
+              onClick={handleSyncZonas}
+              disabled={syncZon.loading}
+              style={{ minWidth: 180 }}
+            >
+              {syncZon.loading ? 'Sincronizando…' : 'Sincronizar zonas'}
+            </button>
+            {syncZon.result && (
+              <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+                {syncZon.result.created} creadas · {syncZon.result.updated} actualizadas · {syncZon.result.skipped} omitidas
+              </span>
+            )}
+            {syncZon.error && (
+              <span style={{ fontSize: 13, color: '#ef4444' }}>{syncZon.error}</span>
             )}
           </div>
 
