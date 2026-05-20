@@ -1,13 +1,24 @@
-import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useMensajes } from '../../context/MensajesContext'
 
 const NAV_ADMIN = [
   {
+    section: 'Inicio',
+    links: [
+      { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
+    ],
+  },
+  {
+    section: 'Configuración',
+    links: [
+      { to: '/configuracion/paradas', icon: '📍', label: 'Paradas' },
+      { to: '/configuracion/mapon',   icon: '🛰',  label: 'Mapon GPS' },
+    ],
+  },
+  {
     section: 'Gestión',
     links: [
-      { to: '/dashboard',  icon: '⊞', label: 'Dashboard' },
       { to: '/camioneros', icon: '👤', label: 'Camioneros' },
       { to: '/vehiculos',  icon: '🚛', label: 'Vehículos' },
       { to: '/viajes',     icon: '🗺', label: 'Viajes' },
@@ -17,12 +28,6 @@ const NAV_ADMIN = [
     section: 'Comunicación',
     links: [
       { to: '/mensajes', icon: '💬', label: 'Mensajes', badge: true },
-    ],
-  },
-  {
-    section: 'Configuración',
-    links: [
-      { to: '/configuracion/paradas', icon: '📍', label: 'Paradas' },
     ],
   },
 ]
@@ -38,10 +43,20 @@ const NAV_CAMIONERO = [
   },
 ]
 
+const NAV_MAPS = [
+  {
+    section: 'Mapa',
+    links: [
+      { to: '/dashboard', icon: '⊞', label: 'Mapa GPS' },
+    ],
+  },
+]
+
 export default function Sidebar({ open, onClose, onExpand, onCollapse }) {
-  const { user, logout, isAdmin } = useAuth()
+  const { user, logout, isAdmin, isMaps } = useAuth()
   const { total } = useMensajes()
-  const nav = isAdmin() ? NAV_ADMIN : NAV_CAMIONERO
+
+  const nav = isAdmin() ? NAV_ADMIN : isMaps() ? NAV_MAPS : NAV_CAMIONERO
   const initials = user?.name?.slice(0, 2).toUpperCase() ?? '??'
 
   return (

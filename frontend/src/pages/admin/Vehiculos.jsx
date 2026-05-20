@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getVehiculos, createVehiculo, updateVehiculo, deleteVehiculo } from '../../services/vehiculos'
+import api from '../../services/api'
 import Pagination from '../../components/Pagination'
 import useTableFilter from '../../hooks/useTableFilter'
 
@@ -49,6 +50,24 @@ export default function Vehiculos() {
 
   const listPaginada = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState(null)
+
+  const handleSync = async () => {
+    setSyncing(true)
+    setSyncMsg(null)
+    try {
+      const res = await api.post('/mapon/sync/vehiculos', { limpiar: false })
+      const d = res.data.data
+      setSyncMsg(`${d.created} creados · ${d.updated} actualizados · ${d.skipped} omitidos`)
+      cargar()
+    } catch (err) {
+      setSyncMsg(err?.response?.data?.message ?? 'Error al sincronizar.')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const abrirNuevo = () => { setForm(EMPTY); setFormError(null); setModal('nuevo') }
   const abrirEditar = (v) => {
     setForm({ matricula: v.matricula, marca: v.marca, modelo: v.modelo, anio: v.anio })
@@ -94,7 +113,13 @@ export default function Vehiculos() {
     <div>
       <div className="page-header">
         <h2>Vehículos</h2>
-        <button className="btn btn--primary" onClick={abrirNuevo}>+ Nuevo vehículo</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {syncMsg && <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{syncMsg}</span>}
+          <button className="btn btn--ghost" onClick={handleSync} disabled={syncing}>
+            {syncing ? 'Sincronizando…' : 'Sincronizar Mapon'}
+          </button>
+          <button className="btn btn--primary" onClick={abrirNuevo}>+ Nuevo vehículo</button>
+        </div>
       </div>
 
       {error && <div className="alert alert--error">{error}</div>}

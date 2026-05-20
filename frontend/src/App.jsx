@@ -11,6 +11,7 @@ import Camioneros from './pages/admin/Camioneros'
 import Vehiculos from './pages/admin/Vehiculos'
 import MapaGps from './pages/admin/MapaGps'
 import Paradas from './pages/admin/configuracion/Paradas'
+import MaponConfig from './pages/admin/configuracion/Mapon'
 import './components/layout/Layout.css'
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="/mensajes" element={<Mensajes />} />
               <Route path="/mapa" element={<MapaGps />} />
               <Route path="/configuracion/paradas" element={<Paradas />} />
+              <Route path="/configuracion/mapon"   element={<MaponConfig />} />
             </Route>
           </Route>
 

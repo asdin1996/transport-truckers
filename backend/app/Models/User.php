@@ -38,6 +38,11 @@ class User extends Authenticatable
         return $this->role === 'camionero';
     }
 
+    public function isMaps(): bool
+    {
+        return $this->role === 'maps';
+    }
+
     public function camionero(): HasOne
     {
         return $this->hasOne(Camionero::class);

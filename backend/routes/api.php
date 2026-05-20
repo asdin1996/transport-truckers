@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CamioneroController;
+use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\DocumentoController;
+use App\Http\Controllers\Api\MaponController;
 use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\GestionController;
 use App\Http\Controllers\Api\MensajeController;
@@ -36,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('paradas', [ParadaController::class, 'index']);
     Route::post('paradas', [ParadaController::class, 'store']);
     Route::post('paradas/import', [ParadaController::class, 'import']);
+    Route::put('paradas/{id}', [ParadaController::class, 'update']);
     Route::delete('paradas/{id}', [ParadaController::class, 'destroy']);
 
     // Viajes
@@ -68,4 +71,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('ubicaciones/camionero/{driverId}', [UbicacionController::class, 'latestByDriver']);
     Route::get('ubicaciones/viaje/{tripId}', [UbicacionController::class, 'latestByTrip']);
     Route::get('ubicaciones/viaje/{tripId}/historial', [UbicacionController::class, 'historyByTrip']);
+
+    // Mapon GPS (accesible por admin y maps)
+    Route::get('mapon/units', [MaponController::class, 'units'])
+        ->middleware('role:admin,maps');
+    Route::get('mapon/dashboard', [MaponController::class, 'dashboard'])
+        ->middleware('role:admin,maps');
+    Route::post('mapon/sync/vehiculos', [MaponController::class, 'syncVehiculos'])
+        ->middleware('role:admin');
+    Route::post('mapon/sync/camioneros', [MaponController::class, 'syncCamioneros'])
+        ->middleware('role:admin');
+
+    // Configuración (solo admin)
+    Route::middleware('role:admin')->group(function () {
+        Route::get('configuracion/{clave}', [ConfiguracionController::class, 'show']);
+        Route::put('configuracion/{clave}', [ConfiguracionController::class, 'update']);
+    });
 });
