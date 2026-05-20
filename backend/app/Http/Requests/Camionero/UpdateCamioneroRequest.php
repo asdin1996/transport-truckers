@@ -30,7 +30,7 @@ class UpdateCamioneroRequest extends FormRequest
                 'sometimes', 'string', 'max:20',
                 Rule::unique('camioneros', 'dni')->ignore($id)->whereNull('deleted_at'),
             ],
-            'fecha_nacimiento' => ['sometimes', 'date'],
+            'fecha_nacimiento' => ['sometimes', 'nullable', 'date'],
             'rol'              => ['sometimes', 'in:admin,camionero'],
         ];
     }
@@ -38,10 +38,11 @@ class UpdateCamioneroRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.email'   => 'El email no tiene un formato válido.',
-            'email.unique'  => 'Este email ya está registrado.',
-            'dni.unique'    => 'Este DNI ya está registrado.',
-            'rol.in'        => 'El rol debe ser admin o camionero.',
+            'email.email'              => 'El email no tiene un formato válido.',
+            'email.unique'             => 'Este email ya está registrado.',
+            'dni.unique'               => 'Este DNI ya está registrado.',
+            'fecha_nacimiento.date'    => 'La fecha de nacimiento no es válida.',
+            'rol.in'                   => 'El rol debe ser admin o camionero.',
         ];
     }
 }

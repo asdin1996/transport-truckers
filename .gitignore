@@ -41,3 +41,4 @@ Thumbs.db
 
 # ── Archivos de documentación interna ─────────────────────────
 sql/*
+deploy/
