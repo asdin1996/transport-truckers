@@ -43,6 +43,21 @@ class ParadaController extends Controller
         ]);
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $parada = Parada::findOrFail($id);
+
+        $data = $request->validate([
+            'nombre' => 'required|string|max:255|unique:paradas,nombre,' . $id,
+            'lat'    => 'nullable|numeric|between:-90,90',
+            'lng'    => 'nullable|numeric|between:-180,180',
+        ]);
+
+        $parada->update($data);
+
+        return response()->json(['status' => 'ok', 'data' => $parada, 'message' => 'Parada actualizada.']);
+    }
+
     public function destroy(int $id): JsonResponse
     {
         $parada = Parada::findOrFail($id);
