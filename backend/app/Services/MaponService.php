@@ -272,7 +272,7 @@ class MaponService
         if (!$key) throw new \RuntimeException('API key no configurada');
 
         try {
-            $response = Http::timeout(15)->get(self::BASE_URL . '/zone/list.json', ['key' => $key]);
+            $response = Http::timeout(30)->get(self::BASE_URL . '/object/list.json', ['key' => $key]);
         } catch (ConnectionException $e) {
             throw new \RuntimeException('No se pudo conectar con Mapon: ' . $e->getMessage());
         }
@@ -281,29 +281,24 @@ class MaponService
             throw new \RuntimeException('Error en la API de Mapon: HTTP ' . $response->status());
         }
 
-        $zones = $response->json('data.zones') ?? $response->json('data') ?? [];
+        $objects = $response->json('data.objects') ?? [];
 
         $created = 0;
         $updated = 0;
         $skipped = 0;
 
-        foreach ($zones as $zone) {
-            $nombre = trim($zone['name'] ?? '');
+        foreach ($objects as $obj) {
+            if (($obj['deleted'] ?? 'N') === 'Y') { $skipped++; continue; }
+
+            $nombre = trim($obj['name'] ?? '');
             if (!$nombre) { $skipped++; continue; }
 
-            $lat = $zone['centroid']['lat'] ?? $zone['center']['lat'] ?? null;
-            $lng = $zone['centroid']['lng'] ?? $zone['center']['lng']
-                ?? $zone['centroid']['lon'] ?? $zone['center']['lon'] ?? null;
-
-            if (!$lat && !$lng && !empty($zone['points'])) {
-                $lat = collect($zone['points'])->avg('lat');
-                $lng = collect($zone['points'])->avg(fn($p) => $p['lng'] ?? $p['lon'] ?? 0);
-            }
+            [$lat, $lng] = $this->centrodeWkt($obj['wkt'] ?? '');
 
             $existing = Parada::where('nombre', $nombre)->first();
 
             if ($existing) {
-                $existing->update(array_filter(['lat' => $lat, 'lng' => $lng], fn($v) => $v !== null));
+                if ($lat !== null) $existing->update(['lat' => $lat, 'lng' => $lng]);
                 $updated++;
             } else {
                 Parada::create(['nombre' => $nombre, 'lat' => $lat, 'lng' => $lng]);
@@ -311,7 +306,34 @@ class MaponService
             }
         }
 
-        return ['total' => count($zones), 'created' => $created, 'updated' => $updated, 'skipped' => $skipped];
+        return ['total' => count($objects), 'created' => $created, 'updated' => $updated, 'skipped' => $skipped];
+    }
+
+    private function centrodeWkt(string $wkt): array
+    {
+        if (!$wkt) return [null, null];
+
+        preg_match('/POLYGON\s*\(\((.+)\)\)/i', $wkt, $m);
+        if (empty($m[1])) return [null, null];
+
+        $pares = array_filter(array_map('trim', explode(',', $m[1])));
+        $lats  = [];
+        $lngs  = [];
+
+        foreach ($pares as $par) {
+            $parts = preg_split('/\s+/', trim($par));
+            if (count($parts) >= 2) {
+                $lats[] = (float) $parts[0];
+                $lngs[] = (float) $parts[1];
+            }
+        }
+
+        if (empty($lats)) return [null, null];
+
+        return [
+            round(array_sum($lats) / count($lats), 7),
+            round(array_sum($lngs) / count($lngs), 7),
+        ];
     }
 
     public function hasApiKey(): bool
