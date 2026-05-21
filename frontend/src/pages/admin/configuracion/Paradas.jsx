@@ -391,7 +391,7 @@ export default function Paradas() {
             <button className="btn btn--ghost btn--sm" onClick={() => setModalImport(false)}>✕</button>
           </div>
           <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>
-            El fichero debe contener una columna con cabecera <strong>Nombre</strong>.<br />
+            Columnas: <strong>Nombre</strong> (obligatorio), <strong>Lat</strong> y <strong>Lng</strong> (opcionales).<br />
             Los duplicados se omiten automáticamente.<br />
             Formatos: <strong>.xlsx · .xls · .csv</strong>
           </p>

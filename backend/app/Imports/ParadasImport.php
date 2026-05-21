@@ -24,8 +24,11 @@ class ParadasImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             return null;
         }
 
+        $lat = isset($row['lat']) && $row['lat'] !== '' ? (float) $row['lat'] : null;
+        $lng = isset($row['lng']) && $row['lng'] !== '' ? (float) $row['lng'] : null;
+
         $this->importadas++;
 
-        return new Parada(['nombre' => $nombre]);
+        return new Parada(['nombre' => $nombre, 'lat' => $lat, 'lng' => $lng]);
     }
 }
