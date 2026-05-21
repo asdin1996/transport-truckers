@@ -19,10 +19,10 @@ const makeIcon = (color) => L.divIcon({
 const ICON_MOVING  = makeIcon('#22c55e')
 const ICON_STOPPED = makeIcon('#ef4444')
 
-const ICON_TIENDA = L.divIcon({
+const makeIconTienda = (color) => L.divIcon({
   className: '',
   html: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-    <circle cx="16" cy="16" r="15" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+    <circle cx="16" cy="16" r="15" fill="${color}" stroke="#fff" stroke-width="2"/>
     <text x="16" y="21" text-anchor="middle" font-size="16">🏪</text>
   </svg>`,
   iconSize:   [32, 32],
@@ -186,6 +186,10 @@ export default function DashboardMaps() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#111', zIndex: 50 }}>
+      <style>{`
+        @keyframes route-flow { to { stroke-dashoffset: -17; } }
+        .route-animated { animation: route-flow 0.7s linear infinite; }
+      `}</style>
 
       {/* Barra superior */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', background: '#1a1a1a', borderBottom: '1px solid #2e2e2e', flexShrink: 0 }}>
@@ -236,6 +240,7 @@ export default function DashboardMaps() {
                         ? [viaje.destino_lat, viaje.destino_lng]
                         : proyectarPunto(u.lat, u.lng, u.direction, DISTANCIA_KM))
                     : null
+                  const lineColor    = ESTADOS_CONFIG[viaje?.estado]?.color ?? '#3b82f6'
 
                   return (
                   <Marker
@@ -268,10 +273,10 @@ export default function DashboardMaps() {
                     {destino && (
                       <Polyline
                         positions={[[u.lat, u.lng], destino]}
-                        pathOptions={{ color: '#3b82f6', weight: 2, dashArray: '8 6' }}
+                        pathOptions={{ color: lineColor, weight: 2.5, dashArray: '10 7', className: 'route-animated' }}
                       />
                     )}
-                    {destino && <Marker position={destino} icon={ICON_TIENDA} />}
+                    {destino && <Marker position={destino} icon={makeIconTienda(lineColor)} />}
                   </Marker>
                 )
               })
