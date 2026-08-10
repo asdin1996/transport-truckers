@@ -298,6 +298,7 @@ export default function Viajes() {
                       <select value={editForm.tipo} onChange={setField('tipo')}>
                         <option value="carga">Carga</option>
                         <option value="descarga">Descarga</option>
+                        <option value="adelantar_carga">Adelantar carga</option>
                       </select>
                     </div>
                     <div className="form-group">

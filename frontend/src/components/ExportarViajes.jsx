@@ -21,6 +21,12 @@ const ESTADO_LABELS = {
   cancelado:       'Cancelado',
 }
 
+const TIPO_LABELS = {
+  carga:           'Carga',
+  descarga:        'Descarga',
+  adelantar_carga: 'Adelantar carga',
+}
+
 const ESTADOS = Object.keys(ESTADO_LABELS)
 
 function SectionLabel({ children }) {
@@ -87,7 +93,7 @@ export default function ExportarViajes({ viajes, onClose }) {
     const filas = resultado.map((v) => ({
       'ID':             v.id,
       'Estado':         ESTADO_LABELS[v.estado] ?? v.estado,
-      'Tipo':           v.tipo ? v.tipo.charAt(0).toUpperCase() + v.tipo.slice(1) : '',
+      'Tipo':           TIPO_LABELS[v.tipo] ?? v.tipo ?? '',
       'Origen':         v.origen  ?? '',
       'Destino':        v.destino ?? '',
       'Camionero':      v.camionero ? `${v.camionero.nombre} ${v.camionero.apellidos}` : '',

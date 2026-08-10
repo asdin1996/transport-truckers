@@ -131,6 +131,7 @@ export default function NuevoViaje({ onClose, onCreated }) {
                   <select value={form.tipo} onChange={set('tipo')}>
                     <option value="carga">Carga</option>
                     <option value="descarga">Descarga</option>
+                    <option value="adelantar_carga">Adelantar carga</option>
                   </select>
                 </div>
                 <div className="form-group">

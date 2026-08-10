@@ -21,6 +21,12 @@ const ESTADO_LABELS = {
 const FLUJO_CARGA    = ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado']
 const FLUJO_DESCARGA = ['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado']
 
+const TIPO_LABELS = {
+  carga:          'Carga',
+  descarga:       'Descarga',
+  adelantar_carga: 'Adelantar carga',
+}
+
 function getFlujo(tipo) {
   return tipo === 'descarga' ? FLUJO_DESCARGA : FLUJO_CARGA
 }
@@ -263,7 +269,7 @@ export default function ViajeDetalle() {
           <InfoField label="Estado">
             <span className={`badge badge--${viaje.estado}`}>{ESTADO_LABELS[viaje.estado]}</span>
           </InfoField>
-          <InfoField label="Tipo" >{viaje.tipo ? viaje.tipo.charAt(0).toUpperCase() + viaje.tipo.slice(1) : '—'}</InfoField>
+          <InfoField label="Tipo">{TIPO_LABELS[viaje.tipo] ?? viaje.tipo ?? '—'}</InfoField>
           <InfoField label="Vehículo">
             {viaje.vehiculo
               ? `${viaje.vehiculo.matricula} · ${viaje.vehiculo.marca} ${viaje.vehiculo.modelo}`
@@ -321,6 +327,7 @@ export default function ViajeDetalle() {
                       <select value={editForm.tipo} onChange={setEdit('tipo')}>
                         <option value="carga">Carga</option>
                         <option value="descarga">Descarga</option>
+                        <option value="adelantar_carga">Adelantar carga</option>
                       </select>
                     </div>
                     <div className="form-group">

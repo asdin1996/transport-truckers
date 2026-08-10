@@ -31,7 +31,7 @@ class Viaje extends Model
         'duracion_minutos',
     ];
 
-    const TIPOS = ['carga', 'descarga'];
+    const TIPOS = ['carga', 'descarga', 'adelantar_carga'];
 
     protected function casts(): array
     {

@@ -8,6 +8,12 @@ import NuevoViaje from './NuevoViaje'
 
 const PER_PAGE = 10
 
+const TIPO_LABELS = {
+  carga:           'Carga',
+  descarga:        'Descarga',
+  adelantar_carga: 'Adelantar carga',
+}
+
 const ESTADO_LABELS_ACTIVO = {
   en_camino:       'En camino',
   llegada_destino: 'Llegada a destino',
@@ -406,10 +412,10 @@ function TipoBadge({ tipo }) {
     <span style={{
       fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
       padding: '2px 7px', borderRadius: 4,
-      background: tipo === 'carga' ? 'rgba(33,150,243,0.12)' : 'rgba(255,152,0,0.12)',
-      color: tipo === 'carga' ? '#64b5f6' : '#ffb74d',
+      background: tipo === 'carga' ? 'rgba(33,150,243,0.12)' : tipo === 'adelantar_carga' ? 'rgba(76,175,80,0.12)' : 'rgba(255,152,0,0.12)',
+      color: tipo === 'carga' ? '#64b5f6' : tipo === 'adelantar_carga' ? '#81c784' : '#ffb74d',
     }}>
-      {tipo}
+      {TIPO_LABELS[tipo] ?? tipo}
     </span>
   )
 }
