@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { getCamioneros, createCamionero, updateCamionero, deleteCamionero } from '../../services/camioneros'
+import { getAlmacenes } from '../../services/almacenes'
 import api from '../../services/api'
 import Pagination from '../../components/Pagination'
 import useTableFilter from '../../hooks/useTableFilter'
 
 const PER_PAGE = 10
 
-const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', dni: '', fecha_nacimiento: '', rol: 'camionero' }
+const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', dni: '', fecha_nacimiento: '', rol: 'camionero', almacen_id: '' }
 
 const SEARCH_FIELDS = [
   (c) => `${c.nombre} ${c.apellidos}`,
@@ -45,7 +46,10 @@ export default function Camioneros() {
       .catch(() => setError('Error al cargar camioneros.'))
       .finally(() => setLoading(false))
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    cargar()
+    getAlmacenes().then((r) => setAlmacenes(r.data.data ?? []))
+  }, [])
 
   const enViaje = lista.filter((c) => c.en_viaje)
   const libres  = lista.filter((c) => !c.en_viaje)
@@ -59,8 +63,9 @@ export default function Camioneros() {
 
   const listPaginada = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
-  const [syncing, setSyncing] = useState(false)
-  const [syncMsg, setSyncMsg] = useState(null)
+  const [almacenes, setAlmacenes] = useState([])
+  const [syncing, setSyncing]     = useState(false)
+  const [syncMsg, setSyncMsg]     = useState(null)
 
   const handleSync = async () => {
     setSyncing(true)
@@ -86,7 +91,8 @@ export default function Camioneros() {
       telefono: c.telefono ?? '',
       dni: c.dni,
       fecha_nacimiento: c.fecha_nacimiento ? c.fecha_nacimiento.slice(0, 10) : '',
-      rol: c.user?.role ?? 'camionero',
+      rol:        c.user?.role ?? 'camionero',
+      almacen_id: c.almacen_id ?? '',
     })
     setFormError(null)
     setModal(c)
@@ -265,6 +271,15 @@ export default function Camioneros() {
                     <option value="admin">Administrador</option>
                   </select>
                 </div>
+              </div>
+              <div className="form-group">
+                <label>Almacén</label>
+                <select value={form.almacen_id} onChange={set('almacen_id')}>
+                  <option value="">— Sin almacén asignado —</option>
+                  {almacenes.map((a) => (
+                    <option key={a.id} value={a.id}>{a.nombre}</option>
+                  ))}
+                </select>
               </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn--ghost" onClick={cerrar}>Cancelar</button>

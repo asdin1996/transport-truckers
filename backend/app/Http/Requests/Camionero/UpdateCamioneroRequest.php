@@ -31,6 +31,7 @@ class UpdateCamioneroRequest extends FormRequest
                 Rule::unique('camioneros', 'dni')->ignore($id)->whereNull('deleted_at'),
             ],
             'fecha_nacimiento' => ['sometimes', 'nullable', 'date'],
+            'almacen_id'       => ['nullable', 'exists:almacenes,id'],
             'rol'              => ['sometimes', 'in:admin,camionero'],
         ];
     }

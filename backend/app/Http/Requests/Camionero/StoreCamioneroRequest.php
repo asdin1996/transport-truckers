@@ -28,6 +28,7 @@ class StoreCamioneroRequest extends FormRequest
                 Rule::unique('camioneros', 'dni')->whereNull('deleted_at'),
             ],
             'fecha_nacimiento' => ['required', 'date'],
+            'almacen_id'       => ['nullable', 'exists:almacenes,id'],
             'rol'              => ['required', 'in:admin,camionero'],
         ];
     }

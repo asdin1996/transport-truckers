@@ -21,6 +21,11 @@ class ViajeService extends BaseService
             return $this->repository->allWithRelations();
         }
 
+        if ($user->isGestor()) {
+            $almacenIds = $user->almacenes()->pluck('almacenes.id');
+            return $this->repository->byAlmacenes($almacenIds);
+        }
+
         return $this->repository->byDriver($user->camionero->id);
     }
 
@@ -69,6 +74,12 @@ class ViajeService extends BaseService
 
         if ($user->isAdmin()) {
             return true;
+        }
+
+        if ($user->isGestor()) {
+            $almacenIds = $user->almacenes()->pluck('almacenes.id');
+            $camionero  = $viaje->camionero;
+            return $camionero && $almacenIds->contains($camionero->almacen_id);
         }
 
         return $user->camionero && $viaje->camionero_id === $user->camionero->id;

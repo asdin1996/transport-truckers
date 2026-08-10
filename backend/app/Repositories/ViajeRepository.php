@@ -30,4 +30,12 @@ class ViajeRepository extends BaseRepository
             ->orderByRaw('fecha_inicio IS NULL, fecha_inicio DESC')
             ->get();
     }
+
+    public function byAlmacenes(\Illuminate\Support\Collection $almacenIds)
+    {
+        return $this->model->with(['camionero', 'vehiculo', 'tipoMaterial'])
+            ->whereHas('camionero', fn($q) => $q->whereIn('almacen_id', $almacenIds))
+            ->orderByRaw('fecha_inicio IS NULL, fecha_inicio DESC')
+            ->get();
+    }
 }

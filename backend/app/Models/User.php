@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -33,6 +34,16 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function isGestor(): bool
+    {
+        return $this->role === 'gestor';
+    }
+
+    public function isAdminOrGestor(): bool
+    {
+        return in_array($this->role, ['admin', 'gestor']);
+    }
+
     public function isCamionero(): bool
     {
         return $this->role === 'camionero';
@@ -46,6 +57,11 @@ class User extends Authenticatable
     public function camionero(): HasOne
     {
         return $this->hasOne(Camionero::class);
+    }
+
+    public function almacenes(): BelongsToMany
+    {
+        return $this->belongsToMany(Almacen::class, 'almacen_user');
     }
 
     /**

@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\GestionController;
 use App\Http\Controllers\Api\MensajeController;
 use App\Http\Controllers\Api\UbicacionController;
+use App\Http\Controllers\Api\AlmacenController;
+use App\Http\Controllers\Api\GestorController;
 use App\Http\Controllers\Api\ParadaController;
 use App\Http\Controllers\Api\TipoMaterialController;
 use App\Http\Controllers\Api\VehiculoController;
@@ -34,6 +36,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Vehículos — admin y camionero pueden acceder
     Route::apiResource('vehiculos', VehiculoController::class);
+
+    // Almacenes (configuración)
+    Route::get('almacenes', [AlmacenController::class, 'index']);
+    Route::post('almacenes', [AlmacenController::class, 'store']);
+    Route::put('almacenes/{id}', [AlmacenController::class, 'update']);
+    Route::delete('almacenes/{id}', [AlmacenController::class, 'destroy']);
+
+    // Gestión de usuarios admin/gestor (solo admin)
+    Route::get('gestores', [GestorController::class, 'index']);
+    Route::post('gestores', [GestorController::class, 'store']);
+    Route::put('gestores/{id}', [GestorController::class, 'update']);
+    Route::delete('gestores/{id}', [GestorController::class, 'destroy']);
 
     // Paradas (configuración)
     Route::get('paradas', [ParadaController::class, 'index']);

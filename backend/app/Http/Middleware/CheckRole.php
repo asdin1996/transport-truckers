@@ -17,7 +17,15 @@ class CheckRole
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        if (! in_array($request->user()->role, $roles)) {
+        $userRole   = $request->user()->role;
+        $allowedRoles = $roles;
+
+        // gestor tiene acceso a todo lo que admin tiene acceso, excepto si se especifica explícitamente
+        if ($userRole === 'gestor' && in_array('admin', $allowedRoles)) {
+            $allowedRoles[] = 'gestor';
+        }
+
+        if (! in_array($userRole, $allowedRoles)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No tienes permiso para acceder a este recurso.',

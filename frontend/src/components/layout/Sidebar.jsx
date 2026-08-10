@@ -12,6 +12,8 @@ const NAV_ADMIN = [
   {
     section: 'Configuración',
     links: [
+      { to: '/configuracion/usuarios',       icon: '👥', label: 'Gestión de usuarios' },
+      { to: '/configuracion/almacenes',      icon: '🏭', label: 'Almacenes' },
       { to: '/configuracion/paradas',        icon: '📍', label: 'Paradas' },
       { to: '/configuracion/tipos-material', icon: '📦', label: 'Tipos de material' },
       { to: '/configuracion/mapon',          icon: '🛰',  label: 'Mapon GPS' },

@@ -4,8 +4,8 @@ import DashboardAdmin from './admin/DashboardAdmin'
 import DashboardMaps from './DashboardMaps'
 
 export default function DashboardRouter() {
-  const { isAdmin, isMaps } = useAuth()
-  if (isAdmin()) return <DashboardAdmin />
-  if (isMaps())  return <DashboardMaps />
+  const { isAdminOrGestor, isMaps } = useAuth()
+  if (isAdminOrGestor()) return <DashboardAdmin />
+  if (isMaps())          return <DashboardMaps />
   return <Dashboard />
 }
