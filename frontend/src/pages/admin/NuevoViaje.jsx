@@ -5,6 +5,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 import { getCamioneros } from '../../services/camioneros'
 import { getVehiculos } from '../../services/vehiculos'
 import { getParadas } from '../../services/paradas'
+import { getTiposMaterial } from '../../services/tiposMaterial'
 import { createViaje } from '../../services/viajes'
 import Combobox from '../../components/Combobox'
 import Modal from '../../components/Modal'
@@ -27,28 +28,30 @@ function SectionLabel({ children }) {
 }
 
 export default function NuevoViaje({ onClose, onCreated }) {
-  const [options, setOptions] = useState({ camioneros: [], vehiculos: [], paradas: [] })
+  const [options, setOptions] = useState({ camioneros: [], vehiculos: [], paradas: [], tiposMaterial: [] })
   const [form, setForm] = useState({
-    camionero_id: '',
-    vehiculo_id:  '',
-    tipo:         'carga',
-    origen:       '',
-    destino:      '',
-    estado:       'pendiente',
-    fecha_inicio: new Date(),
-    notas:        '',
+    camionero_id:     '',
+    vehiculo_id:      '',
+    tipo:             'carga',
+    tipo_material_id: '',
+    origen:           '',
+    destino:          '',
+    estado:           'pendiente',
+    fecha_inicio:     new Date(),
+    notas:            '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState(null)
 
   useEffect(() => {
-    Promise.all([getCamioneros(), getVehiculos(), getParadas()])
-      .then(([cRes, vRes, pRes]) => {
+    Promise.all([getCamioneros(), getVehiculos(), getParadas(), getTiposMaterial()])
+      .then(([cRes, vRes, pRes, tmRes]) => {
         setOptions({
-          camioneros: cRes.data.data ?? [],
-          vehiculos:  vRes.data.data ?? [],
-          paradas:    pRes.data.data ?? [],
+          camioneros:    cRes.data.data  ?? [],
+          vehiculos:     vRes.data.data  ?? [],
+          paradas:       pRes.data.data  ?? [],
+          tiposMaterial: tmRes.data.data ?? [],
         })
       })
       .catch(() => setError('Error al cargar los datos.'))
@@ -66,9 +69,10 @@ export default function NuevoViaje({ onClose, onCreated }) {
       const payload = { ...form }
       if (payload.fecha_inicio instanceof Date)
         payload.fecha_inicio = payload.fecha_inicio.toISOString().slice(0, 10)
-      if (!payload.camionero_id) delete payload.camionero_id
-      if (!payload.vehiculo_id) delete payload.vehiculo_id
-      if (!payload.notas)       delete payload.notas
+      if (!payload.camionero_id)     delete payload.camionero_id
+      if (!payload.vehiculo_id)      delete payload.vehiculo_id
+      if (!payload.tipo_material_id) delete payload.tipo_material_id
+      if (!payload.notas)            delete payload.notas
       await createViaje(payload)
       onCreated?.()
       onClose()
@@ -135,6 +139,18 @@ export default function NuevoViaje({ onClose, onCreated }) {
                   </select>
                 </div>
                 <div className="form-group">
+                  <label>Tipo de material</label>
+                  <select value={form.tipo_material_id} onChange={set('tipo_material_id')}>
+                    <option value="">— Sin especificar —</option>
+                    {options.tiposMaterial.map((t) => (
+                      <option key={t.id} value={t.id}>{t.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
                   <label>Estado inicial</label>
                   <select value={form.estado} onChange={set('estado')}>
                     <option value="pendiente">Pendiente</option>

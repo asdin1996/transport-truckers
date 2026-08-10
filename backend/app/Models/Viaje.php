@@ -19,6 +19,7 @@ class Viaje extends Model
         'camionero_id',
         'vehiculo_id',
         'tipo',
+        'tipo_material_id',
         'origen',
         'destino',
         'estado',
@@ -48,6 +49,11 @@ class Viaje extends Model
     public function camionero(): BelongsTo
     {
         return $this->belongsTo(Camionero::class);
+    }
+
+    public function tipoMaterial(): BelongsTo
+    {
+        return $this->belongsTo(TipoMaterial::class);
     }
 
     public function vehiculo(): BelongsTo

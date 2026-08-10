@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\GestionController;
 use App\Http\Controllers\Api\MensajeController;
 use App\Http\Controllers\Api\UbicacionController;
 use App\Http\Controllers\Api\ParadaController;
+use App\Http\Controllers\Api\TipoMaterialController;
 use App\Http\Controllers\Api\VehiculoController;
 use App\Http\Controllers\Api\ViajeController;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('paradas/import', [ParadaController::class, 'import']);
     Route::put('paradas/{id}', [ParadaController::class, 'update']);
     Route::delete('paradas/{id}', [ParadaController::class, 'destroy']);
+
+    // Tipos de material (configuración)
+    Route::get('tipos-material', [TipoMaterialController::class, 'index']);
+    Route::post('tipos-material', [TipoMaterialController::class, 'store']);
+    Route::post('tipos-material/import', [TipoMaterialController::class, 'import']);
+    Route::put('tipos-material/{id}', [TipoMaterialController::class, 'update']);
+    Route::delete('tipos-material/{id}', [TipoMaterialController::class, 'destroy']);
 
     // Viajes
     Route::apiResource('viajes', ViajeController::class);

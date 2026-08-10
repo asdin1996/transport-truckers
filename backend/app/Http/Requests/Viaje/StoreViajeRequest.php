@@ -21,8 +21,9 @@ class StoreViajeRequest extends FormRequest
         return [
             'camionero_id' => ['nullable', 'exists:camioneros,id'],
             'vehiculo_id'  => ['nullable', 'exists:vehiculos,id'],
-            'tipo'         => ['sometimes', 'in:' . implode(',', Viaje::TIPOS)],
-            'origen'       => ['nullable', 'string', 'max:255'],
+            'tipo'             => ['sometimes', 'in:' . implode(',', Viaje::TIPOS)],
+            'tipo_material_id' => ['nullable', 'exists:tipos_material,id'],
+            'origen'           => ['nullable', 'string', 'max:255'],
             'destino'      => ['nullable', 'string', 'max:255'],
             'estado'       => ['sometimes', 'in:' . implode(',', Viaje::ESTADOS)],
             'fecha_inicio' => ['nullable', 'date'],
