@@ -79,12 +79,7 @@ class ViajeService extends BaseService
         if ($user->isGestor()) {
             $almacenIds = $user->almacenes()->pluck('almacenes.id');
             $camionero  = $viaje->camionero;
-            // Permitir acceso si el camionero no tiene almacén asignado (pendiente de asignar)
-            // o si su almacén está entre los del gestor
-            return $camionero && (
-                $camionero->almacen_id === null ||
-                $almacenIds->contains($camionero->almacen_id)
-            );
+            return $camionero && $almacenIds->contains($camionero->almacen_id);
         }
 
         return $user->camionero && $viaje->camionero_id === $user->camionero->id;

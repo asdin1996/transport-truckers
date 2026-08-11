@@ -24,11 +24,7 @@ class CamioneroRepository extends BaseRepository
         return $this->model
             ->with(['user', 'almacen'])
             ->withExists(['viajes as en_viaje' => fn ($q) => $q->whereIn('estado', ['en_camino', 'cargando', 'descargando', 'llegada_destino'])])
-            ->where(function ($q) use ($almacenIds) {
-                // Camioneros del almacén del gestor + los sin almacén asignado (para poder asignarlos)
-                $q->whereIn('almacen_id', $almacenIds)
-                  ->orWhereNull('almacen_id');
-            })
+            ->whereIn('almacen_id', $almacenIds)
             ->get();
     }
 
