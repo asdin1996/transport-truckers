@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import Login from './pages/Login'
@@ -16,6 +16,11 @@ import TiposMaterial from './pages/admin/configuracion/TiposMaterial'
 import Almacenes from './pages/admin/configuracion/Almacenes'
 import GestionUsuarios from './pages/admin/configuracion/GestionUsuarios'
 import './components/layout/Layout.css'
+
+function AdminOnlyRoute({ children }) {
+  const { isAdmin } = useAuth()
+  return isAdmin() ? children : <Navigate to="/dashboard" replace />
+}
 
 export default function App() {
   return (
@@ -37,7 +42,7 @@ export default function App() {
               <Route path="/configuracion/mapon"            element={<MaponConfig />} />
               <Route path="/configuracion/tipos-material"   element={<TiposMaterial />} />
               <Route path="/configuracion/almacenes"        element={<Almacenes />} />
-              <Route path="/configuracion/usuarios"         element={<GestionUsuarios />} />
+              <Route path="/configuracion/usuarios"         element={<AdminOnlyRoute><GestionUsuarios /></AdminOnlyRoute>} />
             </Route>
           </Route>
 

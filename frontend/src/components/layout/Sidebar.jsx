@@ -35,6 +35,39 @@ const NAV_ADMIN = [
   },
 ]
 
+// Gestor: igual que admin pero sin Gestión de usuarios
+const NAV_GESTOR = [
+  {
+    section: 'Inicio',
+    links: [
+      { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
+    ],
+  },
+  {
+    section: 'Configuración',
+    links: [
+      { to: '/configuracion/almacenes',      icon: '🏭', label: 'Almacenes' },
+      { to: '/configuracion/paradas',        icon: '📍', label: 'Paradas' },
+      { to: '/configuracion/tipos-material', icon: '📦', label: 'Tipos de material' },
+      { to: '/configuracion/mapon',          icon: '🛰',  label: 'Mapon GPS' },
+    ],
+  },
+  {
+    section: 'Gestión',
+    links: [
+      { to: '/camioneros', icon: '👤', label: 'Camioneros' },
+      { to: '/vehiculos',  icon: '🚛', label: 'Vehículos' },
+      { to: '/viajes',     icon: '🗺', label: 'Viajes' },
+    ],
+  },
+  {
+    section: 'Comunicación',
+    links: [
+      { to: '/mensajes', icon: '💬', label: 'Mensajes', badge: true },
+    ],
+  },
+]
+
 const NAV_CAMIONERO = [
   {
     section: 'Mi trabajo',
@@ -56,10 +89,10 @@ const NAV_MAPS = [
 ]
 
 export default function Sidebar({ open, onClose, onExpand, onCollapse }) {
-  const { user, logout, isAdmin, isAdminOrGestor, isMaps } = useAuth()
+  const { user, logout, isAdmin, isGestor, isMaps } = useAuth()
   const { total } = useMensajes()
 
-  const nav = isAdminOrGestor() ? NAV_ADMIN : isMaps() ? NAV_MAPS : NAV_CAMIONERO
+  const nav = isAdmin() ? NAV_ADMIN : isGestor() ? NAV_GESTOR : isMaps() ? NAV_MAPS : NAV_CAMIONERO
   const initials = user?.name?.slice(0, 2).toUpperCase() ?? '??'
 
   return (

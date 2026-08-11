@@ -30,15 +30,19 @@ function SortIcon({ col, sort }) {
 }
 
 export default function Camioneros() {
-  const [lista, setLista] = useState([])
-  const [filtro, setFiltro] = useState('todos')
-  const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [modal, setModal] = useState(null)
-  const [form, setForm] = useState(EMPTY)
-  const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState(null)
+  const [lista, setLista]           = useState([])
+  const [filtro, setFiltro]         = useState('todos')
+  const [filtroAlmacenes, setFiltroAlmacenes] = useState([]) // [] = todos
+  const [page, setPage]             = useState(1)
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(null)
+  const [modal, setModal]           = useState(null)
+  const [form, setForm]             = useState(EMPTY)
+  const [saving, setSaving]         = useState(false)
+  const [formError, setFormError]   = useState(null)
+  const [almacenes, setAlmacenes]   = useState([])
+  const [syncing, setSyncing]       = useState(false)
+  const [syncMsg, setSyncMsg]       = useState(null)
 
   const cargar = () =>
     getCamioneros()
@@ -51,21 +55,35 @@ export default function Camioneros() {
     getAlmacenes().then((r) => setAlmacenes(r.data.data ?? []))
   }, [])
 
+  const toggleAlmacen = (id) => {
+    setFiltroAlmacenes((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+    setPage(1)
+  }
+
   const enViaje = lista.filter((c) => c.en_viaje)
   const libres  = lista.filter((c) => !c.en_viaje)
-  const base    = filtro === 'en_viaje' ? enViaje : filtro === 'libres' ? libres : lista
 
-  const { query, setQuery, sort, toggleSort, processed } = useTableFilter(base, SEARCH_FIELDS, SORT_GETTERS)
+  // Primero filtrar por estado
+  const porEstado = filtro === 'en_viaje' ? enViaje : filtro === 'libres' ? libres : lista
+
+  // Luego filtrar por almacén seleccionado
+  // 'sin_almacen' es un valor especial para camioneros sin almacén asignado
+  const porAlmacen = filtroAlmacenes.length === 0
+    ? porEstado
+    : porEstado.filter((c) => {
+        if (filtroAlmacenes.includes('sin_almacen') && !c.almacen_id) return true
+        return filtroAlmacenes.includes(String(c.almacen_id))
+      })
+
+  const { query, setQuery, sort, toggleSort, processed } = useTableFilter(porAlmacen, SEARCH_FIELDS, SORT_GETTERS)
 
   const doSearch  = (q) => { setQuery(q); setPage(1) }
   const doSort    = (col) => { toggleSort(col); setPage(1) }
   const doFiltro  = (f) => { setFiltro(f); setPage(1) }
 
   const listPaginada = processed.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-
-  const [almacenes, setAlmacenes] = useState([])
-  const [syncing, setSyncing]     = useState(false)
-  const [syncMsg, setSyncMsg]     = useState(null)
 
   const handleSync = async () => {
     setSyncing(true)
@@ -158,6 +176,41 @@ export default function Camioneros() {
           En viaje ({enViaje.length})
         </button>
       </div>
+
+      {/* Filtro por almacén */}
+      {almacenes.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-muted)', alignSelf: 'center', marginRight: 4 }}>
+            Almacén:
+          </span>
+          {almacenes.map((a) => {
+            const activo = filtroAlmacenes.includes(String(a.id))
+            return (
+              <button
+                key={a.id}
+                onClick={() => toggleAlmacen(String(a.id))}
+                className={`chip${activo ? ' chip--active' : ''}`}
+              >
+                {a.nombre}
+              </button>
+            )
+          })}
+          <button
+            onClick={() => toggleAlmacen('sin_almacen')}
+            className={`chip${filtroAlmacenes.includes('sin_almacen') ? ' chip--active' : ''}`}
+          >
+            Sin almacén
+          </button>
+          {filtroAlmacenes.length > 0 && (
+            <button
+              onClick={() => { setFiltroAlmacenes([]); setPage(1) }}
+              style={{ fontSize: 11, background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', textDecoration: 'underline', padding: '0 4px' }}
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="card">
         <div className="table-controls">

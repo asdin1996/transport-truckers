@@ -43,11 +43,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('almacenes/{id}', [AlmacenController::class, 'update']);
     Route::delete('almacenes/{id}', [AlmacenController::class, 'destroy']);
 
-    // Gestión de usuarios admin/gestor (solo admin)
-    Route::get('gestores', [GestorController::class, 'index']);
-    Route::post('gestores', [GestorController::class, 'store']);
-    Route::put('gestores/{id}', [GestorController::class, 'update']);
-    Route::delete('gestores/{id}', [GestorController::class, 'destroy']);
+    // Gestión de usuarios (solo admin)
+    Route::middleware('role:admin')->group(function () {
+        Route::get('gestores', [GestorController::class, 'index']);
+        Route::post('gestores', [GestorController::class, 'store']);
+        Route::put('gestores/{id}', [GestorController::class, 'update']);
+        Route::delete('gestores/{id}', [GestorController::class, 'destroy']);
+    });
 
     // Paradas (configuración)
     Route::get('paradas', [ParadaController::class, 'index']);
