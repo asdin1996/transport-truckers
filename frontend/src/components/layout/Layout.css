@@ -358,3 +358,29 @@ a { color: inherit; text-decoration: none; }
     margin-left: 0;
   }
 }
+
+/* ── Dashboard: grupos por camionero ───────────────────────── */
+.dashboard-group__first td {
+  border-top: 2px solid var(--color-border);
+}
+
+.dashboard-group__last td {
+  border-bottom: 2px solid var(--color-border);
+}
+
+/* Separación interna entre viajes del mismo grupo */
+.dashboard-group__row td {
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.badge-libre {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(102,187,106,0.12);
+  color: #66bb6a;
+}
