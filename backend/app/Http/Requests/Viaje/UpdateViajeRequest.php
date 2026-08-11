@@ -29,6 +29,7 @@ class UpdateViajeRequest extends FormRequest
             'fecha_inicio' => ['nullable', 'date'],
             'fecha_fin'    => ['nullable', 'date'],
             'notas'        => ['nullable', 'string', 'max:1000'],
+            'orden'        => ['sometimes', 'nullable', 'integer', 'min:0'],
         ];
     }
 }

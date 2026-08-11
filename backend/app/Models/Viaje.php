@@ -23,6 +23,7 @@ class Viaje extends Model
         'origen',
         'destino',
         'estado',
+        'orden',
         'fecha_inicio',
         'fecha_fin',
         'notas',
