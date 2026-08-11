@@ -13,12 +13,14 @@ class CamioneroController extends Controller
 {
     public function __construct(private CamioneroService $service) {}
 
-    public function index(): JsonResponse
+    public function index(\Illuminate\Http\Request $request): JsonResponse
     {
+        $soloMisAlmacenes = $request->boolean('mis_almacenes');
+
         return response()->json([
             'status'  => 'ok',
             'message' => null,
-            'data'    => $this->service->getAll(),
+            'data'    => $this->service->getAll($soloMisAlmacenes),
         ]);
     }
 

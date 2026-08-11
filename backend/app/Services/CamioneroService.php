@@ -17,11 +17,11 @@ class CamioneroService extends BaseService
         parent::__construct($repository);
     }
 
-    public function getAll()
+    public function getAll(bool $soloMisAlmacenes = false)
     {
         $user = Auth::user();
 
-        if ($user->isGestor()) {
+        if ($soloMisAlmacenes && $user->isGestor()) {
             $almacenIds = $user->almacenes()->pluck('almacenes.id');
             return $this->repository->byAlmacenes($almacenIds);
         }

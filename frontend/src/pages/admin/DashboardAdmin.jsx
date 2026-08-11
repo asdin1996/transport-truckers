@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getViajes, cambiarEstado, cambiarOrden } from '../../services/viajes'
-import { getCamioneros } from '../../services/camioneros'
+import { getCamionerosAlmacen } from '../../services/camioneros'
 import Pagination from '../../components/Pagination'
 import NuevoViaje from './NuevoViaje'
 
@@ -93,7 +93,7 @@ export default function DashboardAdmin() {
   const [now, setNow] = useState(new Date())
 
   const cargar = () =>
-    Promise.all([getViajes(), getCamioneros()])
+    Promise.all([getViajes(), getCamionerosAlmacen()])
       .then(([vRes, cRes]) => {
         setViajes(vRes.data.data     ?? [])
         setCamioneros(cRes.data.data ?? [])
