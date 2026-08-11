@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Almacen;
+use App\Models\Vehiculo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Camionero extends Model
@@ -16,6 +17,7 @@ class Camionero extends Model
     protected $fillable = [
         'user_id',
         'almacen_id',
+        'vehiculo_id',
         'nombre',
         'apellidos',
         'email',
@@ -39,6 +41,11 @@ class Camionero extends Model
     public function almacen(): BelongsTo
     {
         return $this->belongsTo(Almacen::class);
+    }
+
+    public function vehiculo(): BelongsTo
+    {
+        return $this->belongsTo(Vehiculo::class);
     }
 
     public function viajes(): HasMany

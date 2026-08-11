@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { getCamioneros, createCamionero, updateCamionero, deleteCamionero } from '../../services/camioneros'
 import { getAlmacenes } from '../../services/almacenes'
+import { getVehiculos } from '../../services/vehiculos'
 import api from '../../services/api'
 import Pagination from '../../components/Pagination'
 import useTableFilter from '../../hooks/useTableFilter'
 
 const PER_PAGE = 10
 
-const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', dni: '', fecha_nacimiento: '', rol: 'camionero', almacen_id: '' }
+const EMPTY = { nombre: '', apellidos: '', email: '', telefono: '', dni: '', fecha_nacimiento: '', rol: 'camionero', almacen_id: '', vehiculo_id: '' }
 
 const SEARCH_FIELDS = [
   (c) => `${c.nombre} ${c.apellidos}`,
@@ -41,6 +42,7 @@ export default function Camioneros() {
   const [saving, setSaving]         = useState(false)
   const [formError, setFormError]   = useState(null)
   const [almacenes, setAlmacenes]   = useState([])
+  const [vehiculos, setVehiculos]   = useState([])
   const [syncing, setSyncing]       = useState(false)
   const [syncMsg, setSyncMsg]       = useState(null)
 
@@ -53,6 +55,7 @@ export default function Camioneros() {
   useEffect(() => {
     cargar()
     getAlmacenes().then((r) => setAlmacenes(r.data.data ?? []))
+    getVehiculos().then((r) => setVehiculos(r.data.data ?? []))
   }, [])
 
   const toggleAlmacen = (id) => {
@@ -110,7 +113,8 @@ export default function Camioneros() {
       dni: c.dni,
       fecha_nacimiento: c.fecha_nacimiento ? c.fecha_nacimiento.slice(0, 10) : '',
       rol:        c.user?.role ?? 'camionero',
-      almacen_id: c.almacen_id ?? '',
+      almacen_id: c.almacen_id  ?? '',
+      vehiculo_id: c.vehiculo_id ?? '',
     })
     setFormError(null)
     setModal(c)
@@ -333,6 +337,15 @@ export default function Camioneros() {
                   <option value="">— Sin almacén asignado —</option>
                   {almacenes.map((a) => (
                     <option key={a.id} value={a.id}>{a.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Vehículo asignado <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
+                <select value={form.vehiculo_id} onChange={set('vehiculo_id')}>
+                  <option value="">— Sin vehículo asignado —</option>
+                  {vehiculos.map((v) => (
+                    <option key={v.id} value={v.id}>{v.matricula}{v.marca ? ` · ${v.marca}` : ''}{v.modelo ? ` ${v.modelo}` : ''}</option>
                   ))}
                 </select>
               </div>

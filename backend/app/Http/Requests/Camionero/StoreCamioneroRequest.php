@@ -29,6 +29,7 @@ class StoreCamioneroRequest extends FormRequest
             ],
             'fecha_nacimiento' => ['nullable', 'date'],
             'almacen_id'       => ['nullable', 'exists:almacenes,id'],
+            'vehiculo_id'      => ['nullable', 'exists:vehiculos,id'],
             'rol'              => ['required', 'in:admin,camionero'],
         ];
     }

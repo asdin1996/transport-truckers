@@ -89,7 +89,7 @@ export default function DashboardAdmin() {
   const [page, setPage]             = useState(1)
   const [comenzando, setComenzando]     = useState(null)
   const [reordenando, setReordenando]   = useState(null)
-  const [modalCamioneroId, setModalCamioneroId] = useState(null)
+  const [modalCamionero, setModalCamionero] = useState(null) // null=cerrado | { id, vehiculoId }
   const [now, setNow] = useState(new Date())
 
   const cargar = () =>
@@ -180,7 +180,7 @@ export default function DashboardAdmin() {
         </div>
         <button
           className="btn btn--primary"
-          onClick={() => setModalCamioneroId('')}
+          onClick={() => setModalCamionero({ id: '', vehiculoId: '' })}
           style={{ fontSize: 15, padding: '10px 24px', fontWeight: 600 }}
         >
           + Nuevo viaje
@@ -273,7 +273,7 @@ export default function DashboardAdmin() {
                       )}
                       <button
                         className="btn btn--ghost btn--sm dashboard-nuevo-viaje-btn"
-                        onClick={() => setModalCamioneroId(c.id)}
+                        onClick={() => setModalCamionero({ id: c.id, vehiculoId: c.vehiculo?.id ?? '' })}
                       >
                         + Nuevo viaje
                       </button>
@@ -389,10 +389,11 @@ export default function DashboardAdmin() {
         )}
       </div>
 
-      {modalCamioneroId !== null && (
+      {modalCamionero !== null && (
         <NuevoViaje
-          defaultCamioneroId={modalCamioneroId}
-          onClose={() => setModalCamioneroId(null)}
+          defaultCamioneroId={modalCamionero.id}
+          defaultVehiculoId={modalCamionero.vehiculoId}
+          onClose={() => setModalCamionero(null)}
           onCreated={() => { setLoading(true); cargar() }}
         />
       )}
