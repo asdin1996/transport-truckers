@@ -27,10 +27,10 @@ function SectionLabel({ children }) {
   )
 }
 
-export default function NuevoViaje({ onClose, onCreated }) {
+export default function NuevoViaje({ onClose, onCreated, defaultCamioneroId = '' }) {
   const [options, setOptions] = useState({ camioneros: [], vehiculos: [], paradas: [], tiposMaterial: [] })
   const [form, setForm] = useState({
-    camionero_id:     '',
+    camionero_id:     defaultCamioneroId,
     vehiculo_id:      '',
     tipo:             'carga',
     tipo_material_id: '',

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getViajes, updateViaje, cambiarEstado, deleteViaje } from '../../services/viajes'
+import { getViajes, cambiarEstado } from '../../services/viajes'
 import { getCamioneros } from '../../services/camioneros'
 import Pagination from '../../components/Pagination'
-import ProximoViajeSelect from '../../components/ProximoViajeSelect'
 import NuevoViaje from './NuevoViaje'
 
-const PER_PAGE = 10
+const PER_PAGE = 15
 
 const TIPO_LABELS = {
   carga:           'Carga',
@@ -14,225 +13,171 @@ const TIPO_LABELS = {
   adelantar_carga: 'Adelantar carga',
 }
 
-const ESTADO_LABELS_ACTIVO = {
+const ESTADOS_ACTIVOS = ['en_camino', 'llegada_destino', 'cargando', 'descargando']
+
+const ESTADO_LABELS = {
+  pendiente:       'Pendiente',
   en_camino:       'En camino',
-  llegada_destino: 'Llegada a destino',
+  llegada_destino: 'En destino',
   cargando:        'Cargando',
   descargando:     'Descargando',
+  finalizado:      'Finalizado',
+  cancelado:       'Cancelado',
 }
 
-function filtrar(lista, q) {
-  if (!q) return lista
+// Para cada camionero: viaje actual (activo > pendiente próximo) y próximo pendiente
+function buildFilas(camioneros, viajes) {
+  return camioneros.map((c) => {
+    const suyos = viajes.filter((v) => v.camionero_id === c.id)
+
+    const activo = suyos.find((v) => ESTADOS_ACTIVOS.includes(v.estado)) ?? null
+
+    const pendientes = suyos
+      .filter((v) => v.estado === 'pendiente')
+      .sort((a, b) => {
+        if (!a.fecha_inicio && !b.fecha_inicio) return 0
+        if (!a.fecha_inicio) return 1
+        if (!b.fecha_inicio) return -1
+        return a.fecha_inicio.localeCompare(b.fecha_inicio)
+      })
+
+    const viajeActual  = activo ?? pendientes[0] ?? null
+    const proximoViaje = activo ? (pendientes[0] ?? null) : (pendientes[1] ?? null)
+
+    return { camionero: c, viajeActual, proximoViaje }
+  })
+}
+
+function filtrarFilas(filas, q) {
+  if (!q) return filas
   const ql = q.toLowerCase()
-  return lista.filter((v) =>
-    `${v.camionero?.nombre ?? ''} ${v.camionero?.apellidos ?? ''}`.toLowerCase().includes(ql) ||
-    (v.origen  ?? '').toLowerCase().includes(ql) ||
-    (v.destino ?? '').toLowerCase().includes(ql) ||
-    (v.vehiculo?.matricula ?? '').toLowerCase().includes(ql)
+  return filas.filter(({ camionero: c, viajeActual: v }) =>
+    `${c.nombre} ${c.apellidos}`.toLowerCase().includes(ql) ||
+    (v?.origen  ?? '').toLowerCase().includes(ql) ||
+    (v?.destino ?? '').toLowerCase().includes(ql) ||
+    (v?.vehiculo?.matricula ?? '').toLowerCase().includes(ql)
   )
 }
 
-function SearchInput({ value, onChange, placeholder }) {
-  return (
-    <div className="table-search">
-      <span className="table-search__icon">⌕</span>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    </div>
-  )
+function fmtFecha(iso) {
+  if (!iso) return null
+  return new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 }
 
 export default function DashboardAdmin() {
-  const [viajes, setViajes]               = useState([])
-  const [camioneros, setCamioneros]       = useState([])
-  const [loading, setLoading]             = useState(true)
-  const [modalOpen, setModalOpen]         = useState(false)
-  const [asignando, setAsignando]         = useState(null)
-  const [asignandoCam, setAsignandoCam]   = useState(null)
-  const [comenzando, setComenzando]       = useState(null)
-  const [eliminando, setEliminando]       = useState(null)
-
-  const [qActivos, setQActivos]       = useState('')
-  const [pageActivos, setPageActivos] = useState(1)
-  const [qPend, setQPend]             = useState('')
-  const [pagePend, setPagePend]       = useState(1)
-  const [now, setNow]                 = useState(new Date())
+  const [viajes, setViajes]         = useState([])
+  const [camioneros, setCamioneros] = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [query, setQuery]           = useState('')
+  const [page, setPage]             = useState(1)
+  const [comenzando, setComenzando] = useState(null)
+  const [modalCamioneroId, setModalCamioneroId] = useState(null)  // null = cerrado
+  const [now, setNow] = useState(new Date())
 
   const cargar = () =>
-    getViajes()
-      .then((res) => setViajes(res.data.data ?? []))
+    Promise.all([getViajes(), getCamioneros()])
+      .then(([vRes, cRes]) => {
+        setViajes(vRes.data.data      ?? [])
+        setCamioneros(cRes.data.data  ?? [])
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
 
-  useEffect(() => {
-    cargar()
-    getCamioneros().then((res) => setCamioneros(res.data.data ?? [])).catch(() => {})
-  }, [])
+  useEffect(() => { cargar() }, [])
 
-  // Actualizar fecha automáticamente a medianoche (app puede quedar abierta todo el día)
+  // Actualizar fecha a medianoche si la app queda abierta
   useEffect(() => {
     const msHastaMedianoche = () => {
       const n = new Date()
       return new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1) - n
     }
     let timer
-    const programar = () => {
-      timer = setTimeout(() => { setNow(new Date()); programar() }, msHastaMedianoche())
-    }
+    const programar = () => { timer = setTimeout(() => { setNow(new Date()); programar() }, msHastaMedianoche()) }
     programar()
     return () => clearTimeout(timer)
   }, [])
 
-  const handleAsignarProximo = async (activoViaje, pendienteId) => {
-    setAsignando(activoViaje.id)
+  const handleComenzar = async (viajeId) => {
+    setComenzando(viajeId)
     try {
-      if (pendienteId) {
-        await updateViaje(pendienteId, { camionero_id: activoViaje.camionero_id })
-      }
+      await cambiarEstado(viajeId, 'en_camino')
       await cargar()
-    } catch {
-      /* silencioso */
-    } finally {
-      setAsignando(null)
-    }
-  }
-
-  const handleEliminarPendiente = async (viaje) => {
-    setEliminando(viaje.id)
-    try {
-      await deleteViaje(viaje.id)
-      await cargar()
-    } catch {
-      /* silencioso */
-    } finally {
-      setEliminando(null)
-    }
-  }
-
-  const handleComenzarViaje = async (viaje) => {
-    setComenzando(viaje.id)
-    try {
-      await cambiarEstado(viaje.id, 'en_camino')
-      await cargar()
-    } catch {
-      /* silencioso */
-    } finally {
-      setComenzando(null)
-    }
-  }
-
-  const handleAsignarCamionero = async (pendienteViaje, camioneroId) => {
-    setAsignandoCam(pendienteViaje.id)
-    try {
-      await updateViaje(pendienteViaje.id, { camionero_id: camioneroId })
-      await cargar()
-    } catch {
-      /* silencioso */
-    } finally {
-      setAsignandoCam(null)
-    }
+    } catch { /* silencioso */ }
+    finally { setComenzando(null) }
   }
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
-  const activos     = viajes.filter((v) => ['en_camino', 'llegada_destino', 'cargando', 'descargando'].includes(v.estado))
-  const pendientes  = viajes.filter((v) => v.estado === 'pendiente')
+  // Stats
+  const activos    = viajes.filter((v) => ESTADOS_ACTIVOS.includes(v.estado))
+  const pendientes = viajes.filter((v) => v.estado === 'pendiente')
   const finalizados = viajes.filter((v) => v.estado === 'finalizado')
-  const sinAsignar  = pendientes.filter((v) => !v.camionero_id)
 
+  const enViaje = camioneros.filter((c) => activos.some((v) => v.camionero_id === c.id))
+  const libres  = camioneros.filter((c) => !activos.some((v) => v.camionero_id === c.id))
 
-  const opcionesCamionero = camioneros.map((c) => ({
-    value: c.id,
-    label: `${c.nombre} ${c.apellidos}`,
-  }))
+  // Construir filas por camionero
+  const todasFilas    = buildFilas(camioneros, viajes)
+  const filasFiltradas = filtrarFilas(todasFilas, query)
+  const filasPagina   = filasFiltradas.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
-  // Opciones para el selector de próximo viaje: todos los pendientes
-  const opcionesProximo = pendientes.map((v) => ({
-    value: v.id,
-    label: [v.origen, v.destino].filter(Boolean).join(' → ') || `Viaje #${v.id}`,
-    fecha: v.fecha_inicio
-      ? new Date(v.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES')
-      : null,
-  }))
-
-  const semanaInicio = (() => {
-    const d = new Date(now); const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day
-    d.setDate(d.getDate() + diff); return d
-  })()
-  const semanaFin = new Date(semanaInicio); semanaFin.setDate(semanaInicio.getDate() + 6)
-  const fmtSemana = (d) => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-
-  const pendientesOrdenados = [...pendientes].sort((a, b) => {
-    // Primero por fecha de salida (más próxima primero, sin fecha al final)
-    if (a.fecha_inicio || b.fecha_inicio) {
-      if (!a.fecha_inicio) return 1
-      if (!b.fecha_inicio) return -1
-      const diff = a.fecha_inicio.localeCompare(b.fecha_inicio)
-      if (diff !== 0) return diff
-    }
-    // En caso de empate, por fecha de creación (más antiguo primero)
-    if (!a.created_at && !b.created_at) return 0
-    if (!a.created_at) return 1
-    if (!b.created_at) return -1
-    return a.created_at.localeCompare(b.created_at)
-  })
-
-  const activosFiltrados = filtrar(activos, qActivos)
-  const pendFiltrados    = filtrar(pendientesOrdenados, qPend)
-  const activosPage      = activosFiltrados.slice((pageActivos - 1) * PER_PAGE, pageActivos * PER_PAGE)
-  const pendPage         = pendFiltrados.slice((pagePend - 1) * PER_PAGE, pagePend * PER_PAGE)
+  const doSearch = (q) => { setQuery(q); setPage(1) }
 
   return (
     <div>
+      {/* Cabecera */}
       <div className="page-header">
-        <h2>Panel de Administración</h2>
+        <div>
+          <h2 style={{ margin: 0 }}>Panel de Administración</h2>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-muted)' }}>
+            {now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
         <button
           className="btn btn--primary"
-          onClick={() => setModalOpen(true)}
+          onClick={() => setModalCamioneroId('')}
           style={{ fontSize: 15, padding: '10px 24px', fontWeight: 600 }}
         >
           + Nuevo viaje
         </button>
       </div>
 
+      {/* Stats */}
       <div className="stats-row" style={{ marginBottom: 20 }}>
-        <StatCard label="Viajes activos"    value={activos.length}    color="var(--color-primary)" to="/viajes?estado=en_camino" />
-        <StatCard label="Viajes pendientes" value={pendientes.length} color="#ffc107"              to="/viajes?estado=pendiente" />
-        <StatCard label="Finalizados"       value={finalizados.length} color="#66bb6a"             to="/viajes?estado=finalizado" />
+        <StatCard label="Camioneros en viaje" value={enViaje.length}    color="var(--color-primary)" />
+        <StatCard label="Camioneros libres"   value={libres.length}     color="#66bb6a" />
+        <StatCard label="Viajes pendientes"   value={pendientes.length} color="#ffc107" to="/viajes?estado=pendiente" />
+        <StatCard label="Finalizados hoy"     value={finalizados.filter((v) => v.fecha_fin === now.toISOString().slice(0,10)).length} color="#90a4ae" />
       </div>
 
-      {/* Viajes activos */}
-      <div className="card" style={{ marginBottom: 20 }}>
+      {/* Tabla camioneros */}
+      <div className="card">
         <div className="table-controls">
-          <p className="card__title" style={{ margin: 0 }}>Viajes activos</p>
-          <SearchInput value={qActivos} onChange={(v) => { setQActivos(v); setPageActivos(1) }} placeholder="Buscar…" />
-          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-            {activosFiltrados.length} resultado{activosFiltrados.length !== 1 ? 's' : ''}
-          </span>
-          <div style={{ marginLeft: 'auto', textAlign: 'right', lineHeight: 1.3 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--color-text)', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>
-              {now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-              {now.getFullYear()}
-            </div>
+          <p className="card__title" style={{ margin: 0 }}>Camioneros</p>
+          <div className="table-search">
+            <span className="table-search__icon">⌕</span>
+            <input
+              type="text"
+              placeholder="Buscar camionero, origen, destino, matrícula…"
+              value={query}
+              onChange={(e) => doSearch(e.target.value)}
+            />
           </div>
+          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+            {filasFiltradas.length} de {camioneros.length}
+          </span>
         </div>
 
-        {activos.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No hay viajes activos.</p>
-        ) : activosFiltrados.length === 0 ? (
+        {camioneros.length === 0 ? (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin camioneros registrados.</p>
+        ) : filasFiltradas.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin resultados.</p>
         ) : (
           <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>Camionero / Vehículo</th>
+                  <th>Camionero</th>
                   <th>Origen</th>
                   <th>Destino</th>
                   <th>Tipo</th>
@@ -242,147 +187,88 @@ export default function DashboardAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {activosPage.map((v) => {
-                  // Viajes pendientes ya asignados a este camionero
-                  // eslint-disable-next-line eqeqeq
-                  const pendientesDelCamionero = pendientes.filter((p) => p.camionero_id == v.camionero_id).reverse()
-                  // Opciones: solo los pendientes SIN camionero asignado (para no duplicar)
-                  const opcionesDisponibles = opcionesProximo.filter(
-                    // eslint-disable-next-line eqeqeq
-                    (o) => !pendientes.find((p) => p.id == o.value && p.camionero_id)
-                  )
+                {filasPagina.map(({ camionero: c, viajeActual: v, proximoViaje: prox }) => {
+                  const libre = !v
+                  const esActivo = v && ESTADOS_ACTIVOS.includes(v.estado)
+                  const esPendiente = v && v.estado === 'pendiente'
 
                   return (
-                    <tr key={v.id}>
+                    <tr key={c.id} style={{ opacity: libre ? 0.65 : 1 }}>
+
+                      {/* Camionero */}
                       <td>
-                        {v.camionero?.nombre} {v.camionero?.apellidos}
-                        {v.vehiculo?.matricula && (
-                          <span style={{ color: 'var(--color-text-muted)', fontSize: 12 }}> · {v.vehiculo.matricula}</span>
-                        )}
-                      </td>
-                      <td>{v.origen ?? '—'}</td>
-                      <td>{v.destino ?? '—'}</td>
-                      <td><TipoBadge tipo={v.tipo} /></td>
-                      <td>
-                        <span className={`badge badge--${v.estado}`}>
-                          {ESTADO_LABELS_ACTIVO[v.estado]}
-                        </span>
-                      </td>
-                      <td style={{ minWidth: 220 }}>
-                        {pendientesDelCamionero.length > 0 && (
-                          <div style={{ marginBottom: 4 }}>
-                            {pendientesDelCamionero.map((p) => (
-                              <div key={p.id} style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                                <span style={{ color: 'var(--color-primary)', fontSize: 10 }}>▶</span>
-                                {[p.origen, p.destino].filter(Boolean).join(' → ') || `Viaje #${p.id}`}
-                                {p.fecha_inicio && (
-                                  <span style={{ opacity: 0.7 }}>
-                                    · {new Date(p.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES')}
-                                  </span>
-                                )}
-                              </div>
-                            ))}
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>
+                          {c.nombre} {c.apellidos}
+                        </div>
+                        {v?.vehiculo?.matricula && (
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 1 }}>
+                            {v.vehiculo.matricula}
+                            {v.vehiculo.marca ? ` · ${v.vehiculo.marca}` : ''}
                           </div>
                         )}
-                        <ProximoViajeSelect
-                          value={null}
-                          options={opcionesDisponibles}
-                          disabled={asignando === v.id}
-                          onChange={(val) => handleAsignarProximo(v, val)}
-                          placeholder="+ Asignar viaje pendiente"
-                        />
                       </td>
-                      <td>
-                        <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">Ver</Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-            <Pagination page={pageActivos} total={activosFiltrados.length} perPage={PER_PAGE} onChange={setPageActivos} />
-          </div>
-        )}
-      </div>
 
-      {/* Viajes pendientes */}
-      <div className="card">
-        <div className="table-controls">
-          <p className="card__title" style={{ margin: 0 }}>Viajes pendientes</p>
-          <SearchInput value={qPend} onChange={(v) => { setQPend(v); setPagePend(1) }} placeholder="Buscar…" />
-          <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-            {pendFiltrados.length} resultado{pendFiltrados.length !== 1 ? 's' : ''}
-          </span>
-          <div style={{ marginLeft: 'auto', textAlign: 'right', lineHeight: 1.3 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
-              {fmtSemana(semanaInicio)} – {fmtSemana(semanaFin)} {semanaFin.getFullYear()}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-              Semana actual
-            </div>
-          </div>
-        </div>
+                      {/* Origen */}
+                      <td style={{ fontSize: 13 }}>{v?.origen ?? <Dash />}</td>
 
-        {pendientes.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin viajes pendientes.</p>
-        ) : pendFiltrados.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin resultados.</p>
-        ) : (
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Origen</th>
-                  <th>Destino</th>
-                  <th>Tipo</th>
-                  <th>Fecha inicio</th>
-                  <th>Camionero</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendPage.map((v) => {
-                  return (
-                    <tr key={v.id}>
-                      <td>{v.origen ?? '—'}</td>
-                      <td>{v.destino ?? '—'}</td>
-                      <td><TipoBadge tipo={v.tipo} /></td>
+                      {/* Destino */}
+                      <td style={{ fontSize: 13 }}>{v?.destino ?? <Dash />}</td>
+
+                      {/* Tipo */}
+                      <td>{v?.tipo ? <TipoBadge tipo={v.tipo} /> : <Dash />}</td>
+
+                      {/* Estado */}
                       <td>
-                        {v.fecha_inicio
-                          ? new Date(v.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES')
-                          : '—'}
+                        {libre ? (
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                            padding: '2px 8px', borderRadius: 4,
+                            background: 'rgba(102,187,106,0.12)', color: '#66bb6a',
+                          }}>Libre</span>
+                        ) : (
+                          <span className={`badge badge--${v.estado}`}>
+                            {ESTADO_LABELS[v.estado] ?? v.estado}
+                          </span>
+                        )}
                       </td>
-                      <td style={{ minWidth: 220 }}>
-                        <ProximoViajeSelect
-                          value={v.camionero_id ?? null}
-                          options={opcionesCamionero}
-                          disabled={asignandoCam === v.id}
-                          onChange={(val) => handleAsignarCamionero(v, val)}
-                          placeholder="— Sin camionero —"
-                        />
+
+                      {/* Próximo viaje */}
+                      <td style={{ fontSize: 12, color: 'var(--color-text-muted)', minWidth: 180 }}>
+                        {prox ? (
+                          <div>
+                            <span style={{ color: 'var(--color-primary)', marginRight: 4 }}>▶</span>
+                            {[prox.origen, prox.destino].filter(Boolean).join(' → ') || `Viaje #${prox.id}`}
+                            {prox.fecha_inicio && (
+                              <span style={{ opacity: 0.7, marginLeft: 4 }}>· {fmtFecha(prox.fecha_inicio)}</span>
+                            )}
+                          </div>
+                        ) : <Dash />}
                       </td>
+
+                      {/* Acciones */}
                       <td>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-                          {v.camionero_id && (
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'nowrap' }}>
+                          {esPendiente && (
                             <button
-                              title="Comenzar viaje"
                               className="btn btn--primary btn--sm"
                               disabled={comenzando === v.id}
-                              onClick={() => handleComenzarViaje(v)}
-                              style={{ fontSize: 13, padding: '4px 10px' }}
+                              onClick={() => handleComenzar(v.id)}
+                              style={{ fontSize: 12, padding: '4px 10px', whiteSpace: 'nowrap' }}
                             >
                               {comenzando === v.id ? '…' : '▶ Comenzar'}
                             </button>
                           )}
-                          <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm">Editar</Link>
+                          {v && (
+                            <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm" style={{ whiteSpace: 'nowrap' }}>
+                              Ver viaje
+                            </Link>
+                          )}
                           <button
-                            title="Eliminar viaje"
                             className="btn btn--ghost btn--sm"
-                            disabled={eliminando === v.id}
-                            onClick={() => handleEliminarPendiente(v)}
-                            style={{ color: '#e57373', padding: '4px 8px', fontSize: 17 }}
+                            onClick={() => setModalCamioneroId(c.id)}
+                            style={{ whiteSpace: 'nowrap', color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
                           >
-                            {eliminando === v.id ? '…' : '🗑'}
+                            + Nuevo viaje
                           </button>
                         </div>
                       </td>
@@ -391,14 +277,16 @@ export default function DashboardAdmin() {
                 })}
               </tbody>
             </table>
-            <Pagination page={pagePend} total={pendFiltrados.length} perPage={PER_PAGE} onChange={setPagePend} />
+            <Pagination page={page} total={filasFiltradas.length} perPage={PER_PAGE} onChange={setPage} />
           </div>
         )}
       </div>
 
-      {modalOpen && (
+      {/* Modal nuevo viaje */}
+      {modalCamioneroId !== null && (
         <NuevoViaje
-          onClose={() => setModalOpen(false)}
+          defaultCamioneroId={modalCamioneroId}
+          onClose={() => setModalCamioneroId(null)}
           onCreated={() => { setLoading(true); cargar() }}
         />
       )}
@@ -406,14 +294,17 @@ export default function DashboardAdmin() {
   )
 }
 
+function Dash() {
+  return <span style={{ color: 'var(--color-text-muted)', opacity: 0.4 }}>—</span>
+}
+
 function TipoBadge({ tipo }) {
-  if (!tipo) return <span style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>—</span>
   return (
     <span style={{
       fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
       padding: '2px 7px', borderRadius: 4,
       background: tipo === 'carga' ? 'rgba(33,150,243,0.12)' : tipo === 'adelantar_carga' ? 'rgba(76,175,80,0.12)' : 'rgba(255,152,0,0.12)',
-      color: tipo === 'carga' ? '#64b5f6' : tipo === 'adelantar_carga' ? '#81c784' : '#ffb74d',
+      color:      tipo === 'carga' ? '#64b5f6'              : tipo === 'adelantar_carga' ? '#81c784'              : '#ffb74d',
     }}>
       {TIPO_LABELS[tipo] ?? tipo}
     </span>
@@ -421,10 +312,13 @@ function TipoBadge({ tipo }) {
 }
 
 function StatCard({ label, value, color, to }) {
-  return (
-    <Link to={to} className="stat-card stat-card--link">
+  const content = (
+    <>
       <span className="stat-card__value" style={{ color }}>{value}</span>
       <span className="stat-card__label">{label}</span>
-    </Link>
+    </>
   )
+  return to
+    ? <Link to={to} className="stat-card stat-card--link">{content}</Link>
+    : <div className="stat-card">{content}</div>
 }

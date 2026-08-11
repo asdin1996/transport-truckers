@@ -56,10 +56,10 @@ const NAV_MAPS = [
 ]
 
 export default function Sidebar({ open, onClose, onExpand, onCollapse }) {
-  const { user, logout, isAdmin, isMaps } = useAuth()
+  const { user, logout, isAdmin, isAdminOrGestor, isMaps } = useAuth()
   const { total } = useMensajes()
 
-  const nav = isAdmin() ? NAV_ADMIN : isMaps() ? NAV_MAPS : NAV_CAMIONERO
+  const nav = isAdminOrGestor() ? NAV_ADMIN : isMaps() ? NAV_MAPS : NAV_CAMIONERO
   const initials = user?.name?.slice(0, 2).toUpperCase() ?? '??'
 
   return (
