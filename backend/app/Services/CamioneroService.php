@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Repositories\CamioneroRepository;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class CamioneroService extends BaseService
@@ -18,6 +19,13 @@ class CamioneroService extends BaseService
 
     public function getAll()
     {
+        $user = Auth::user();
+
+        if ($user->isGestor()) {
+            $almacenIds = $user->almacenes()->pluck('almacenes.id');
+            return $this->repository->byAlmacenes($almacenIds);
+        }
+
         return $this->repository->allWithUser();
     }
 
