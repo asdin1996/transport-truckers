@@ -24,10 +24,10 @@ class StoreCamioneroRequest extends FormRequest
             ],
             'telefono'         => ['nullable', 'string', 'max:20'],
             'dni'              => [
-                'required', 'string', 'max:20',
+                'nullable', 'string', 'max:20',
                 Rule::unique('camioneros', 'dni')->whereNull('deleted_at'),
             ],
-            'fecha_nacimiento' => ['required', 'date'],
+            'fecha_nacimiento' => ['nullable', 'date'],
             'almacen_id'       => ['nullable', 'exists:almacenes,id'],
             'rol'              => ['required', 'in:admin,camionero'],
         ];
@@ -41,9 +41,7 @@ class StoreCamioneroRequest extends FormRequest
             'email.required'     => 'El email es obligatorio.',
             'email.email'        => 'El email no tiene un formato válido.',
             'email.unique'       => 'Este email ya está registrado.',
-            'dni.required'       => 'El DNI es obligatorio.',
-            'dni.unique'         => 'Este DNI ya está registrado.',
-            'fecha_nacimiento.required' => 'La fecha de nacimiento es obligatoria.',
+            'dni.unique'                => 'Este DNI ya está registrado.',
             'fecha_nacimiento.date'     => 'La fecha de nacimiento no es válida.',
             'rol.required'       => 'El rol es obligatorio.',
             'rol.in'             => 'El rol debe ser admin o camionero.',

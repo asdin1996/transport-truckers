@@ -187,12 +187,13 @@ export default function Camioneros() {
                 <th className="th--sortable" onClick={() => doSort('dni')}>
                   DNI <SortIcon col="dni" sort={sort} />
                 </th>
+                <th>Almacén</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {listPaginada.length === 0 && (
-                <tr><td colSpan={6} style={{ color: 'var(--color-text-muted)' }}>Sin resultados.</td></tr>
+                <tr><td colSpan={7} style={{ color: 'var(--color-text-muted)' }}>Sin resultados.</td></tr>
               )}
               {listPaginada.map((c) => (
                 <tr key={c.id}>
@@ -211,7 +212,8 @@ export default function Camioneros() {
                   </td>
                   <td>{c.email}</td>
                   <td>{c.telefono ?? '—'}</td>
-                  <td>{c.dni}</td>
+                  <td>{c.dni ?? '—'}</td>
+                  <td style={{ fontSize: 13 }}>{c.almacen?.nombre ?? <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn--ghost btn--sm" onClick={() => abrirEditar(c)}>Editar</button>
@@ -255,13 +257,13 @@ export default function Camioneros() {
                   <input value={form.telefono} onChange={set('telefono')} />
                 </div>
                 <div className="form-group">
-                  <label>DNI</label>
-                  <input value={form.dni} onChange={set('dni')} required />
+                  <label>DNI <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
+                  <input value={form.dni} onChange={set('dni')} />
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Fecha de nacimiento</label>
+                  <label>Fecha de nacimiento <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
                   <input type="date" value={form.fecha_nacimiento} onChange={set('fecha_nacimiento')} />
                 </div>
                 <div className="form-group">
