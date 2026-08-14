@@ -12,6 +12,7 @@ import { getViajes, updateViaje } from '../services/viajes'
 import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
 import { getParadas } from '../services/paradas'
+import { getAlmacenes } from '../services/almacenes'
 import Pagination from '../components/Pagination'
 import useTableFilter from '../hooks/useTableFilter'
 import NuevoViaje from './admin/NuevoViaje'
@@ -62,6 +63,8 @@ export default function Viajes() {
   const [page, setPage]         = useState(1)
   const [modalNuevo, setModalNuevo]       = useState(false)
   const [modalExportar, setModalExportar] = useState(false)
+  const [almacenes, setAlmacenes]         = useState([])
+  const [filtroAlmacen, setFiltroAlmacen] = useState('todos')
 
   const [editModal, setEditModal]   = useState(false)
   const [editViaje, setEditViaje]   = useState(null)
@@ -77,8 +80,14 @@ export default function Viajes() {
       .finally(() => setLoading(false))
 
   useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    getAlmacenes().then((res) => setAlmacenes(res.data.data ?? []))
+  }, [])
 
-  const base = filtro === 'todos' ? viajes : viajes.filter((v) => v.estado === filtro)
+  const porEstado   = filtro === 'todos' ? viajes : viajes.filter((v) => v.estado === filtro)
+  const base        = filtroAlmacen === 'todos'
+    ? porEstado
+    : porEstado.filter((v) => String(v.camionero?.almacen_id) === filtroAlmacen)
   const { query, setQuery, sort, toggleSort, processed } = useTableFilter(base, SEARCH_FIELDS, SORT_GETTERS)
 
   const cambiarFiltro = (estado) => {
@@ -185,7 +194,7 @@ export default function Viajes() {
       </div>
 
       <div className="card">
-        {/* Buscador + contador */}
+        {/* Buscador + filtro almacén + contador */}
         <div className="table-controls">
           <div className="table-search">
             <span className="table-search__icon">⌕</span>
@@ -195,6 +204,21 @@ export default function Viajes() {
               placeholder="Buscar por camionero, origen, destino, matrícula…"
             />
           </div>
+          {almacenes.length > 0 && (
+            <div className="table-search" style={{ minWidth: 180, flex: '0 0 auto' }}>
+              <span className="table-search__icon">🏭</span>
+              <select
+                value={filtroAlmacen}
+                onChange={(e) => { setFiltroAlmacen(e.target.value); setPage(1) }}
+                style={{ border: 'none', background: 'transparent', fontSize: 13, color: 'var(--color-text)', outline: 'none', width: '100%', cursor: 'pointer' }}
+              >
+                <option value="todos">Todos los almacenes</option>
+                {almacenes.map((a) => (
+                  <option key={a.id} value={String(a.id)}>{a.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
             {processed.length} resultado{processed.length !== 1 ? 's' : ''}
           </span>

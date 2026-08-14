@@ -10,23 +10,23 @@ const NAV_ADMIN = [
     ],
   },
   {
-    section: 'Configuración',
+    section: 'Gestión viajes',
     links: [
-      { to: '/configuracion/usuarios',                    icon: '👥', label: 'Gestión de usuarios' },
+      { to: '/camioneros',                                icon: '👤', label: 'Camioneros' },
+      { to: '/vehiculos',                                 icon: '🚛', label: 'Vehículos' },
+      { to: '/viajes',                                    icon: '🗺', label: 'Viajes' },
       { to: '/configuracion/almacenes',                   icon: '🏭', label: 'Almacenes' },
       { to: '/configuracion/paradas',                     icon: '📍', label: 'Paradas' },
       { to: '/configuracion/tipos-material',              icon: '📦', label: 'Tipos de material' },
-      { to: '/configuracion/motivos-cancelacion',         icon: '🚫', label: 'Motivos cancelación' },
       { to: '/configuracion/organizaciones-contratantes', icon: '🏢', label: 'Organizaciones' },
-      { to: '/configuracion/mapon',                       icon: '🛰',  label: 'Mapon GPS' },
+      { to: '/configuracion/motivos-cancelacion',         icon: '🚫', label: 'Motivos cancelación' },
     ],
   },
   {
-    section: 'Gestión',
+    section: 'Configuración',
     links: [
-      { to: '/camioneros', icon: '👤', label: 'Camioneros' },
-      { to: '/vehiculos',  icon: '🚛', label: 'Vehículos' },
-      { to: '/viajes',     icon: '🗺', label: 'Viajes' },
+      { to: '/configuracion/usuarios', icon: '👥', label: 'Gestión de usuarios' },
+      { to: '/configuracion/mapon',    icon: '🛰',  label: 'Mapon GPS' },
     ],
   },
   {
@@ -46,22 +46,22 @@ const NAV_GESTOR = [
     ],
   },
   {
-    section: 'Configuración',
+    section: 'Gestión viajes',
     links: [
+      { to: '/camioneros',                                icon: '👤', label: 'Camioneros' },
+      { to: '/vehiculos',                                 icon: '🚛', label: 'Vehículos' },
+      { to: '/viajes',                                    icon: '🗺', label: 'Viajes' },
       { to: '/configuracion/almacenes',                   icon: '🏭', label: 'Almacenes' },
       { to: '/configuracion/paradas',                     icon: '📍', label: 'Paradas' },
       { to: '/configuracion/tipos-material',              icon: '📦', label: 'Tipos de material' },
-      { to: '/configuracion/motivos-cancelacion',         icon: '🚫', label: 'Motivos cancelación' },
       { to: '/configuracion/organizaciones-contratantes', icon: '🏢', label: 'Organizaciones' },
-      { to: '/configuracion/mapon',                       icon: '🛰',  label: 'Mapon GPS' },
+      { to: '/configuracion/motivos-cancelacion',         icon: '🚫', label: 'Motivos cancelación' },
     ],
   },
   {
-    section: 'Gestión',
+    section: 'Configuración',
     links: [
-      { to: '/camioneros', icon: '👤', label: 'Camioneros' },
-      { to: '/vehiculos',  icon: '🚛', label: 'Vehículos' },
-      { to: '/viajes',     icon: '🗺', label: 'Viajes' },
+      { to: '/configuracion/mapon', icon: '🛰', label: 'Mapon GPS' },
     ],
   },
   {
