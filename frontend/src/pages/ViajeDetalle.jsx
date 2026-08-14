@@ -302,7 +302,7 @@ export default function ViajeDetalle() {
   const siguienteEstado = getSiguienteEstado(viaje.estado, viaje.tipo)
   const puedeEditar = isAdmin() || isGestor() ||
     (['pendiente', 'en_camino'].includes(viaje.estado) && viaje.camionero?.user_id === user?.id)
-  const puedeCancelar = isAdmin() && viaje.estado !== 'cancelado' && viaje.estado !== 'finalizado'
+  const puedeCancelar = (isAdmin() || isGestor()) && viaje.estado !== 'cancelado' && viaje.estado !== 'finalizado'
 
   return (
     <div>
