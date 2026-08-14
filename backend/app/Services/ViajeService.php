@@ -90,9 +90,12 @@ class ViajeService extends BaseService
         }
 
         if ($user->isGestor()) {
+            // Viajes sin conductor son accesibles para poder asignarlos
+            if (! $viaje->camionero_id) {
+                return true;
+            }
             $almacenIds = $user->almacenes()->pluck('almacenes.id');
-            $camionero  = $viaje->camionero;
-            return $camionero && $almacenIds->contains($camionero->almacen_id);
+            return $almacenIds->contains($viaje->camionero->almacen_id);
         }
 
         return $user->camionero && $viaje->camionero_id === $user->camionero->id;
