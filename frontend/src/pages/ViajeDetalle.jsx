@@ -307,19 +307,28 @@ export default function ViajeDetalle() {
   return (
     <div>
       <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn btn--ghost btn--sm" onClick={() => navigate(-1)}>← Volver</button>
-          <h2 style={{ margin: 0 }}>{viaje.origen ?? '?'} → {viaje.destino ?? '?'}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button className="btn btn--back" onClick={() => navigate(-1)}>
+            <span style={{ fontSize: 15, lineHeight: 1 }}>←</span> Volver
+          </button>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+              {viaje.origen ?? '?'} → {viaje.destino ?? '?'}
+            </h2>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--color-text-muted)' }}>
+              {TIPO_LABELS[viaje.tipo] ?? viaje.tipo ?? ''}{viaje.camionero ? ` · ${viaje.camionero.nombre} ${viaje.camionero.apellidos}` : ''}
+            </p>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {puedeCancelar && (
-            <button className="btn btn--danger btn--sm" onClick={abrirCancelar}>
-              Cancelar viaje
+            <button className="btn btn--danger" onClick={abrirCancelar}>
+              ✕ Cancelar viaje
             </button>
           )}
           {puedeEditar && (
-            <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(viaje)}>
-              Editar
+            <button className="btn btn--secondary" onClick={() => abrirEdicion(viaje)}>
+              ✎ Editar viaje
             </button>
           )}
         </div>
