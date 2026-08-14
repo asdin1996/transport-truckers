@@ -54,10 +54,10 @@ function sortViajes(lista) {
   })
 }
 
-function buildGrupos(camioneros, viajes, filtroAlmacenId) {
+function buildGrupos(camioneros, viajes, filtroAlmacenes) {
   let drivers = camioneros
-  if (filtroAlmacenId) {
-    drivers = camioneros.filter((c) => String(c.almacen_id) === String(filtroAlmacenId))
+  if (filtroAlmacenes.length > 0) {
+    drivers = camioneros.filter((c) => filtroAlmacenes.includes(String(c.almacen_id)))
   }
   return drivers.map((c) => {
     const suyos = viajes.filter(
@@ -104,7 +104,7 @@ export default function DashboardAdmin() {
   const [loading, setLoading]                   = useState(true)
   const [query, setQuery]                       = useState('')
   const [page, setPage]                         = useState(1)
-  const [filtroAlmacen, setFiltroAlmacen]       = useState('')
+  const [filtroAlmacenes, setFiltroAlmacenes]   = useState([])
   const [comenzando, setComenzando]             = useState(null)
   const [reordenando, setReordenando]           = useState(null)
   const [asignando, setAsignando]               = useState(null)
@@ -210,14 +210,16 @@ export default function DashboardAdmin() {
   const enViaje    = camioneros.filter((c) => activos.some((v) => v.camionero_id === c.id))
   const libres     = camioneros.filter((c) => !activos.some((v) => v.camionero_id === c.id))
 
-  const todosGrupos     = buildGrupos(camioneros, viajes, filtroAlmacen)
+  const todosGrupos     = buildGrupos(camioneros, viajes, filtroAlmacenes)
   const gruposFiltrados = filtrarGrupos(todosGrupos, query)
   const gruposPagina    = gruposFiltrados.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
-  // Viajes sin conductor filtrados por almacén si aplica
-  const vscFiltrados = filtroAlmacen
-    ? viajesSinConductor // sin conductor no tienen camionero, no se filtran por almacén
-    : viajesSinConductor
+  const toggleAlmacen = (id) => {
+    setFiltroAlmacenes((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+    setPage(1)
+  }
 
   const doSearch = (q) => { setQuery(q); setPage(1) }
 
@@ -249,25 +251,28 @@ export default function DashboardAdmin() {
 
       {/* Filtro almacén (solo superadmin) */}
       {isAdmin() && almacenes.length > 0 && (
-        <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <label style={{ fontSize: 13, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-            Filtrar por almacén:
-          </label>
-          <select
-            value={filtroAlmacen}
-            onChange={(e) => { setFiltroAlmacen(e.target.value); setPage(1) }}
-            style={{ maxWidth: 260 }}
-          >
-            <option value="">Todos los almacenes</option>
-            {almacenes.map((a) => (
-              <option key={a.id} value={a.id}>{a.nombre}</option>
-            ))}
-          </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0 0 20px' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-muted)', alignSelf: 'center', marginRight: 4 }}>
+            Almacén:
+          </span>
+          {almacenes.map((a) => {
+            const activo = filtroAlmacenes.includes(String(a.id))
+            return (
+              <button key={a.id} onClick={() => toggleAlmacen(String(a.id))} className={`chip${activo ? ' chip--active' : ''}`}>
+                {a.nombre}
+              </button>
+            )
+          })}
+          {filtroAlmacenes.length > 0 && (
+            <button onClick={() => { setFiltroAlmacenes([]); setPage(1) }} style={{ fontSize: 11, background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', textDecoration: 'underline', padding: '0 4px' }}>
+              Limpiar
+            </button>
+          )}
         </div>
       )}
 
       {/* Viajes sin conductor */}
-      {vscFiltrados.length > 0 && (
+      {viajesSinConductor.length > 0 && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <p className="card__title" style={{ margin: 0 }}>
@@ -277,7 +282,7 @@ export default function DashboardAdmin() {
                 background: 'rgba(186,53,52,0.15)', color: 'var(--color-primary)',
                 padding: '2px 8px', borderRadius: 4,
               }}>
-                {vscFiltrados.length}
+                {viajesSinConductor.length}
               </span>
             </p>
           </div>
@@ -293,7 +298,7 @@ export default function DashboardAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {vscFiltrados.map((v) => (
+                {viajesSinConductor.map((v) => (
                   <tr key={v.id}>
                     <td style={{ fontSize: 13 }}>{v.origen  ?? <Dash />}</td>
                     <td style={{ fontSize: 13 }}>{v.destino ?? <Dash />}</td>
