@@ -204,7 +204,7 @@ export default function ViajeDetalle() {
       fecha_fin:                   v.fecha_fin    ? v.fecha_fin.slice(0, 10)    : '',
       notas:                       v.notas                        ?? '',
     })
-    if (isAdmin() && editOpts.camioneros.length === 0) {
+    if ((isAdmin() || isGestor()) && editOpts.camioneros.length === 0) {
       try {
         const [cRes, vRes, pRes, tmRes, orgRes] = await Promise.all([
           getCamioneros(),
@@ -463,7 +463,7 @@ export default function ViajeDetalle() {
             {editError && <div className="alert alert--error" style={{ marginBottom: 12 }}>{editError}</div>}
 
             <form onSubmit={handleGuardarEdicion} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {isAdmin() && (
+              {(isAdmin() || isGestor()) && (
                 <>
                   <div className="form-row">
                     <div className="form-group">
