@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getViaje, cambiarEstado, updateViaje } from '../services/viajes'
+import { getViaje, cambiarEstado, updateViaje, cancelarViaje } from '../services/viajes'
 import { getCamioneros } from '../services/camioneros'
 import { getVehiculos } from '../services/vehiculos'
 import { getParadas } from '../services/paradas'
+import { getTiposMaterial } from '../services/tiposMaterial'
+import { getOrganizacionesContratantes } from '../services/organizacionesContratantes'
+import { getMotivosCancelacion } from '../services/motivosCancelacion'
 import Combobox from '../components/Combobox'
 import Modal from '../components/Modal'
 
@@ -18,26 +21,52 @@ const ESTADO_LABELS = {
   cancelado:        'Cancelado',
 }
 
-const FLUJO_CARGA    = ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado']
-const FLUJO_DESCARGA = ['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado']
-
 const TIPO_LABELS = {
-  carga:          'Carga',
-  descarga:       'Descarga',
-  adelantar_carga: 'Adelantar carga',
+  carga_completa:   'Carga Completa',
+  descarga_completa:'Descarga Completa',
+  dormir:           'Dormir (Adelantar Carga)',
+  vacio:            'Vacío',
+  carga_parcial:    'Carga Parcial',
+  descarga_parcial: 'Descarga Parcial',
+  // compatibilidad con valores anteriores
+  carga:            'Carga',
+  descarga:         'Descarga',
+  adelantar_carga:  'Adelantar carga',
+}
+
+const TIPOS_VIAJE_OPTIONS = [
+  { value: 'carga_completa',    label: 'Carga Completa' },
+  { value: 'descarga_completa', label: 'Descarga Completa' },
+  { value: 'dormir',            label: 'Dormir (Adelantar Carga)' },
+  { value: 'vacio',             label: 'Vacío' },
+  { value: 'carga_parcial',     label: 'Carga Parcial' },
+  { value: 'descarga_parcial',  label: 'Descarga Parcial' },
+]
+
+// Flujos por tipo de viaje
+const FLUJOS = {
+  carga_completa:   ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado'],
+  descarga_completa:['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado'],
+  dormir:           ['pendiente', 'en_camino', 'llegada_destino',                'finalizado'],
+  vacio:            ['pendiente', 'en_camino', 'llegada_destino',                'finalizado'],
+  carga_parcial:    ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado'],
+  descarga_parcial: ['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado'],
+  // compatibilidad
+  carga:            ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado'],
+  descarga:         ['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado'],
+  adelantar_carga:  ['pendiente', 'en_camino', 'llegada_destino',                'finalizado'],
 }
 
 function getFlujo(tipo) {
-  return tipo === 'descarga' ? FLUJO_DESCARGA : FLUJO_CARGA
+  return FLUJOS[tipo] ?? ['pendiente', 'en_camino', 'llegada_destino', 'finalizado']
 }
 
 function getSiguienteEstado(estado, tipo) {
-  if (estado === 'pendiente'       || estado === 'en_curso')   return 'en_camino'
-  if (estado === 'en_camino')                                  return 'llegada_destino'
-  if (estado === 'llegada_destino')                            return tipo === 'descarga' ? 'descargando' : 'cargando'
-  if (estado === 'cargando'        || estado === 'descargando') return 'finalizado'
-  if (estado === 'completado')                                 return null
-  return null
+  const flujo = getFlujo(tipo)
+  const normalizado = { en_curso: 'en_camino', completado: 'finalizado' }[estado] ?? estado
+  const idx = flujo.indexOf(normalizado)
+  if (idx === -1 || idx >= flujo.length - 1) return null
+  return flujo[idx + 1]
 }
 
 const ACCION_LABEL = {
@@ -131,7 +160,7 @@ function TripStepper({ estado, tipo }) {
 
 export default function ViajeDetalle() {
   const { id } = useParams()
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, isGestor } = useAuth()
   const navigate = useNavigate()
 
   const [viaje, setViaje]           = useState(null)
@@ -141,9 +170,16 @@ export default function ViajeDetalle() {
 
   const [editModal, setEditModal]   = useState(false)
   const [editForm, setEditForm]     = useState({})
-  const [editOpts, setEditOpts]     = useState({ camioneros: [], vehiculos: [], paradas: [] })
+  const [editOpts, setEditOpts]     = useState({ camioneros: [], vehiculos: [], paradas: [], tiposMaterial: [], organizaciones: [] })
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError]   = useState(null)
+
+  // Modal cancelar
+  const [cancelModal, setCancelModal]   = useState(false)
+  const [motivos, setMotivos]           = useState([])
+  const [motivoId, setMotivoId]         = useState('')
+  const [cancelando, setCancelando]     = useState(false)
+  const [cancelError, setCancelError]   = useState(null)
 
   const cargar = () =>
     getViaje(id)
@@ -156,23 +192,33 @@ export default function ViajeDetalle() {
   const abrirEdicion = async (v) => {
     setEditError(null)
     setEditForm({
-      camionero_id: v.camionero_id ?? '',
-      vehiculo_id:  v.vehiculo_id  ?? '',
-      tipo:         v.tipo         ?? 'carga',
-      origen:       v.origen       ?? '',
-      destino:      v.destino      ?? '',
-      estado:       v.estado       ?? 'pendiente',
-      fecha_inicio: v.fecha_inicio ? v.fecha_inicio.slice(0, 10) : '',
-      fecha_fin:    v.fecha_fin    ? v.fecha_fin.slice(0, 10)    : '',
-      notas:        v.notas        ?? '',
+      camionero_id:                v.camionero_id                ?? '',
+      vehiculo_id:                 v.vehiculo_id                 ?? '',
+      tipo:                        v.tipo                         ?? 'carga_completa',
+      tipo_material_id:            v.tipo_material_id             ?? '',
+      organizacion_contratante_id: v.organizacion_contratante_id ?? '',
+      origen:                      v.origen                       ?? '',
+      destino:                     v.destino                      ?? '',
+      estado:                      v.estado                       ?? 'pendiente',
+      fecha_inicio:                v.fecha_inicio ? v.fecha_inicio.slice(0, 10) : '',
+      fecha_fin:                   v.fecha_fin    ? v.fecha_fin.slice(0, 10)    : '',
+      notas:                       v.notas                        ?? '',
     })
     if (isAdmin() && editOpts.camioneros.length === 0) {
       try {
-        const [cRes, vRes, pRes] = await Promise.all([getCamioneros(), getVehiculos(), getParadas()])
+        const [cRes, vRes, pRes, tmRes, orgRes] = await Promise.all([
+          getCamioneros(),
+          getVehiculos(),
+          getParadas(),
+          getTiposMaterial(),
+          getOrganizacionesContratantes(),
+        ])
         setEditOpts({
-          camioneros: cRes.data.data ?? [],
-          vehiculos:  vRes.data.data ?? [],
-          paradas:    pRes.data.data ?? [],
+          camioneros:    cRes.data.data   ?? [],
+          vehiculos:     vRes.data.data   ?? [],
+          paradas:       pRes.data.data   ?? [],
+          tiposMaterial: tmRes.data.data  ?? [],
+          organizaciones: orgRes.data.data ?? [],
         })
       } catch {
         setEditError('No se pudieron cargar los datos.')
@@ -187,9 +233,11 @@ export default function ViajeDetalle() {
     setEditError(null)
     try {
       const payload = { ...editForm }
-      if (!payload.fecha_inicio) delete payload.fecha_inicio
-      if (!payload.fecha_fin)    delete payload.fecha_fin
-      if (!payload.notas)        delete payload.notas
+      if (!payload.fecha_inicio)                delete payload.fecha_inicio
+      if (!payload.fecha_fin)                   delete payload.fecha_fin
+      if (!payload.notas)                       delete payload.notas
+      if (!payload.tipo_material_id)            payload.tipo_material_id = null
+      if (!payload.organizacion_contratante_id) payload.organizacion_contratante_id = null
       await updateViaje(id, payload)
       setEditModal(false)
       await cargar()
@@ -202,6 +250,36 @@ export default function ViajeDetalle() {
   }
 
   const setEdit = (f) => (e) => setEditForm((prev) => ({ ...prev, [f]: e.target.value }))
+
+  const abrirCancelar = async () => {
+    setCancelError(null)
+    setMotivoId('')
+    if (motivos.length === 0) {
+      try {
+        const res = await getMotivosCancelacion()
+        setMotivos(res.data.data ?? [])
+      } catch {
+        setCancelError('No se pudieron cargar los motivos.')
+      }
+    }
+    setCancelModal(true)
+  }
+
+  const handleCancelar = async (e) => {
+    e.preventDefault()
+    setCancelando(true)
+    setCancelError(null)
+    try {
+      await cancelarViaje(id, motivoId || null)
+      setCancelModal(false)
+      await cargar()
+    } catch (err) {
+      const msgs = err.response?.data?.errors
+      setCancelError(msgs ? Object.values(msgs).flat().join(' ') : 'Error al cancelar el viaje.')
+    } finally {
+      setCancelando(false)
+    }
+  }
 
   const handleCambiarEstado = async () => {
     const siguiente = getSiguienteEstado(viaje.estado, viaje.tipo)
@@ -222,7 +300,10 @@ export default function ViajeDetalle() {
   if (!viaje)  return null
 
   const siguienteEstado = getSiguienteEstado(viaje.estado, viaje.tipo)
-  const puedeEditar     = isAdmin() || (['pendiente', 'en_camino'].includes(viaje.estado) && viaje.camionero?.user_id === user?.id)
+  // El gestor solo puede ver, no editar
+  const puedeEditar = isAdmin() ||
+    (!isGestor() && ['pendiente', 'en_camino'].includes(viaje.estado) && viaje.camionero?.user_id === user?.id)
+  const puedeCancelar = isAdmin() && viaje.estado !== 'cancelado' && viaje.estado !== 'finalizado'
 
   return (
     <div>
@@ -231,11 +312,18 @@ export default function ViajeDetalle() {
           <button className="btn btn--ghost btn--sm" onClick={() => navigate(-1)}>← Volver</button>
           <h2 style={{ margin: 0 }}>{viaje.origen ?? '?'} → {viaje.destino ?? '?'}</h2>
         </div>
-        {puedeEditar && (
-          <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(viaje)}>
-            Editar
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {puedeCancelar && (
+            <button className="btn btn--danger btn--sm" onClick={abrirCancelar}>
+              Cancelar viaje
+            </button>
+          )}
+          {puedeEditar && (
+            <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(viaje)}>
+              Editar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stepper + acción principal */}
@@ -256,6 +344,18 @@ export default function ViajeDetalle() {
           {(viaje.estado === 'finalizado' || viaje.estado === 'completado') && (
             <p style={{ textAlign: 'center', color: '#66bb6a', fontWeight: 600, paddingTop: 8, fontSize: 14 }}>
               Viaje completado
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Info cancelación */}
+      {viaje.estado === 'cancelado' && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid var(--color-primary)' }}>
+          <p style={{ margin: 0, fontWeight: 600, color: 'var(--color-primary)' }}>Viaje cancelado</p>
+          {viaje.motivo_cancelacion && (
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--color-text-muted)' }}>
+              Motivo: {viaje.motivo_cancelacion.nombre}
             </p>
           )}
         </div>
@@ -286,13 +386,23 @@ export default function ViajeDetalle() {
         </div>
 
         <div className="form-row--3" style={{ marginBottom: 18 }}>
+          <InfoField label="Material">
+            {viaje.tipo_material?.nombre ?? '—'}
+          </InfoField>
+          <InfoField label="Organización contratante">
+            {viaje.organizacion_contratante?.nombre ?? '—'}
+          </InfoField>
+          <InfoField label="Duración real">{formatDuracion(viaje.duracion_minutos)}</InfoField>
+        </div>
+
+        <div className="form-row--3" style={{ marginBottom: 18 }}>
           <InfoField label="Fecha prevista inicio">
             {viaje.fecha_inicio ? new Date(viaje.fecha_inicio + 'T00:00:00').toLocaleDateString('es-ES') : '—'}
           </InfoField>
           <InfoField label="Fecha prevista fin">
             {viaje.fecha_fin ? new Date(viaje.fecha_fin + 'T00:00:00').toLocaleDateString('es-ES') : '—'}
           </InfoField>
-          <InfoField label="Duración real">{formatDuracion(viaje.duracion_minutos)}</InfoField>
+          <div />
         </div>
 
         <div className="form-row--3" style={{ marginBottom: 18 }}>
@@ -307,6 +417,41 @@ export default function ViajeDetalle() {
           </div>
         )}
       </div>
+
+      {/* Modal cancelar viaje */}
+      {cancelModal && (
+        <Modal onClose={() => setCancelModal(false)} maxWidth={480}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <h3 style={{ margin: 0 }}>Cancelar viaje</h3>
+            <button className="btn btn--ghost btn--sm" onClick={() => setCancelModal(false)}>✕</button>
+          </div>
+
+          {cancelError && <div className="alert alert--error" style={{ marginBottom: 12 }}>{cancelError}</div>}
+
+          <form onSubmit={handleCancelar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="form-group">
+              <label>Motivo de cancelación <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
+              <select value={motivoId} onChange={(e) => setMotivoId(e.target.value)}>
+                <option value="">— Sin especificar —</option>
+                {motivos.map((m) => (
+                  <option key={m.id} value={m.id}>{m.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
+              Esta acción no se puede deshacer. El viaje quedará marcado como cancelado.
+            </p>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn--ghost" onClick={() => setCancelModal(false)}>Volver</button>
+              <button type="submit" className="btn btn--danger" disabled={cancelando}>
+                {cancelando ? 'Cancelando…' : 'Confirmar cancelación'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* Modal edición */}
       {editModal && (
@@ -325,9 +470,9 @@ export default function ViajeDetalle() {
                     <div className="form-group">
                       <label>Tipo</label>
                       <select value={editForm.tipo} onChange={setEdit('tipo')}>
-                        <option value="carga">Carga</option>
-                        <option value="descarga">Descarga</option>
-                        <option value="adelantar_carga">Adelantar carga</option>
+                        {TIPOS_VIAJE_OPTIONS.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="form-group">
@@ -361,6 +506,26 @@ export default function ViajeDetalle() {
                         options={editOpts.paradas.map((p) => p.nombre)}
                         placeholder="Buscar destino…"
                       />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Material</label>
+                      <select value={editForm.tipo_material_id} onChange={setEdit('tipo_material_id')}>
+                        <option value="">— Sin especificar —</option>
+                        {editOpts.tiposMaterial.map((t) => (
+                          <option key={t.id} value={t.id}>{t.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Organización contratante</label>
+                      <select value={editForm.organizacion_contratante_id} onChange={setEdit('organizacion_contratante_id')}>
+                        <option value="">— Sin especificar —</option>
+                        {editOpts.organizaciones.map((o) => (
+                          <option key={o.id} value={o.id}>{o.nombre}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div className="form-group">

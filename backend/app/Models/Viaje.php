@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Viaje extends Model
@@ -15,14 +14,25 @@ class Viaje extends Model
 
     const ESTADOS = ['pendiente', 'en_camino', 'llegada_destino', 'cargando', 'descargando', 'finalizado', 'cancelado'];
 
+    const TIPOS = [
+        'carga_completa',
+        'descarga_completa',
+        'dormir',
+        'vacio',
+        'carga_parcial',
+        'descarga_parcial',
+    ];
+
     protected $fillable = [
         'camionero_id',
         'vehiculo_id',
         'tipo',
         'tipo_material_id',
+        'organizacion_contratante_id',
         'origen',
         'destino',
         'estado',
+        'motivo_cancelacion_id',
         'orden',
         'fecha_inicio',
         'fecha_fin',
@@ -32,8 +42,6 @@ class Viaje extends Model
         'hora_fin',
         'duracion_minutos',
     ];
-
-    const TIPOS = ['carga', 'descarga', 'adelantar_carga'];
 
     protected function casts(): array
     {
@@ -55,6 +63,16 @@ class Viaje extends Model
     public function tipoMaterial(): BelongsTo
     {
         return $this->belongsTo(TipoMaterial::class);
+    }
+
+    public function organizacionContratante(): BelongsTo
+    {
+        return $this->belongsTo(OrganizacionContratante::class);
+    }
+
+    public function motivoCancelacion(): BelongsTo
+    {
+        return $this->belongsTo(MotivoCancelacion::class);
     }
 
     public function vehiculo(): BelongsTo

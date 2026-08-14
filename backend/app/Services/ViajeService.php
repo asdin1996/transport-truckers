@@ -29,6 +29,11 @@ class ViajeService extends BaseService
         return $this->repository->byDriver($user->camionero->id);
     }
 
+    public function getSinConductor()
+    {
+        return $this->repository->sinConductor();
+    }
+
     public function find(int $id): ?Viaje
     {
         return $this->repository->findWithRelations($id);
@@ -61,6 +66,14 @@ class ViajeService extends BaseService
         }
 
         return $this->repository->update($viaje->id, $data);
+    }
+
+    public function cancelar(Viaje $viaje, ?int $motivoCancelacionId): bool
+    {
+        return $this->repository->update($viaje->id, [
+            'estado'                => 'cancelado',
+            'motivo_cancelacion_id' => $motivoCancelacionId,
+        ]);
     }
 
     public function delete(int $id): bool

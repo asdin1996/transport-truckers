@@ -53,7 +53,7 @@ function SortIcon({ col, sort }) {
 }
 
 export default function Viajes() {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, isGestor } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [viajes, setViajes]     = useState([])
   const [loading, setLoading]   = useState(true)
@@ -97,7 +97,7 @@ export default function Viajes() {
     setEditForm({
       camionero_id: v.camionero_id ?? '',
       vehiculo_id:  v.vehiculo_id  ?? '',
-      tipo:         v.tipo         ?? 'carga',
+      tipo:         v.tipo         ?? 'carga_completa',
       origen:       v.origen       ?? '',
       destino:      v.destino      ?? '',
       estado:       v.estado       ?? 'pendiente',
@@ -145,7 +145,8 @@ export default function Viajes() {
   }
 
   const setField = (f) => (e) => setEditForm((prev) => ({ ...prev, [f]: e.target.value }))
-  const puedeEditar = (v) => isAdmin() || (['pendiente', 'en_camino'].includes(v.estado) && v.camionero?.user_id === user?.id)
+  // Gestor no puede editar viajes
+  const puedeEditar = (v) => isAdmin() || (!isGestor() && ['pendiente', 'en_camino'].includes(v.estado) && v.camionero?.user_id === user?.id)
 
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
   if (error)   return <div className="alert alert--error">{error}</div>
@@ -296,9 +297,12 @@ export default function Viajes() {
                     <div className="form-group">
                       <label>Tipo</label>
                       <select value={editForm.tipo} onChange={setField('tipo')}>
-                        <option value="carga">Carga</option>
-                        <option value="descarga">Descarga</option>
-                        <option value="adelantar_carga">Adelantar carga</option>
+                        <option value="carga_completa">Carga Completa</option>
+                        <option value="descarga_completa">Descarga Completa</option>
+                        <option value="dormir">Dormir (Adelantar Carga)</option>
+                        <option value="vacio">Vacío</option>
+                        <option value="carga_parcial">Carga Parcial</option>
+                        <option value="descarga_parcial">Descarga Parcial</option>
                       </select>
                     </div>
                     <div className="form-group">

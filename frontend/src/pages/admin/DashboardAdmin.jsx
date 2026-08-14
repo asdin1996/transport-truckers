@@ -1,16 +1,25 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getViajes, cambiarEstado, cambiarOrden } from '../../services/viajes'
+import { getViajes, getViajesSinConductor, cambiarEstado, cambiarOrden, asignarCamionero } from '../../services/viajes'
 import { getCamionerosAlmacen } from '../../services/camioneros'
+import { getAlmacenes } from '../../services/almacenes'
+import { useAuth } from '../../context/AuthContext'
 import Pagination from '../../components/Pagination'
 import NuevoViaje from './NuevoViaje'
 
 const PER_PAGE = 20
 
 const TIPO_LABELS = {
-  carga:           'Carga',
-  descarga:        'Descarga',
-  adelantar_carga: 'Adelantar carga',
+  carga_completa:   'Carga Completa',
+  descarga_completa:'Descarga Completa',
+  dormir:           'Dormir',
+  vacio:            'Vacío',
+  carga_parcial:    'Carga Parcial',
+  descarga_parcial: 'Descarga Parcial',
+  // compatibilidad
+  carga:            'Carga',
+  descarga:         'Descarga',
+  adelantar_carga:  'Adelantar carga',
 }
 
 const ESTADOS_ACTIVOS  = ['en_camino', 'llegada_destino', 'cargando', 'descargando']
@@ -45,8 +54,12 @@ function sortViajes(lista) {
   })
 }
 
-function buildGrupos(camioneros, viajes) {
-  return camioneros.map((c) => {
+function buildGrupos(camioneros, viajes, filtroAlmacenId) {
+  let drivers = camioneros
+  if (filtroAlmacenId) {
+    drivers = camioneros.filter((c) => String(c.almacen_id) === String(filtroAlmacenId))
+  }
+  return drivers.map((c) => {
     const suyos = viajes.filter(
       (v) => v.camionero_id === c.id && ESTADOS_VISIBLES.includes(v.estado)
     )
@@ -79,24 +92,39 @@ function fmtFecha(iso) {
   return new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 }
 
-const COLS = 8 // número total de columnas
+const COLS = 7 // número total de columnas de la tabla principal
 
 export default function DashboardAdmin() {
-  const [viajes, setViajes]         = useState([])
-  const [camioneros, setCamioneros] = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [query, setQuery]           = useState('')
-  const [page, setPage]             = useState(1)
-  const [comenzando, setComenzando]     = useState(null)
-  const [reordenando, setReordenando]   = useState(null)
-  const [modalCamionero, setModalCamionero] = useState(null) // null=cerrado | { id, vehiculoId }
-  const [now, setNow] = useState(new Date())
+  const { isAdmin } = useAuth()
+
+  const [viajes, setViajes]                     = useState([])
+  const [viajesSinConductor, setVSC]            = useState([])
+  const [camioneros, setCamioneros]             = useState([])
+  const [almacenes, setAlmacenes]               = useState([])
+  const [loading, setLoading]                   = useState(true)
+  const [query, setQuery]                       = useState('')
+  const [page, setPage]                         = useState(1)
+  const [filtroAlmacen, setFiltroAlmacen]       = useState('')
+  const [comenzando, setComenzando]             = useState(null)
+  const [reordenando, setReordenando]           = useState(null)
+  const [asignando, setAsignando]               = useState(null)
+  const [modalCamionero, setModalCamionero]     = useState(null)
+  const [modalAsignar, setModalAsignar]         = useState(null) // { viajeId }
+  const [asignarForm, setAsignarForm]           = useState({ camionero_id: '', vehiculo_id: '' })
+  const [now, setNow]                           = useState(new Date())
 
   const cargar = () =>
-    Promise.all([getViajes(), getCamionerosAlmacen()])
-      .then(([vRes, cRes]) => {
-        setViajes(vRes.data.data     ?? [])
-        setCamioneros(cRes.data.data ?? [])
+    Promise.all([
+      getViajes(),
+      getCamionerosAlmacen(),
+      isAdmin() ? getAlmacenes() : Promise.resolve({ data: { data: [] } }),
+      getViajesSinConductor(),
+    ])
+      .then(([vRes, cRes, aRes, vscRes]) => {
+        setViajes(vRes.data.data         ?? [])
+        setCamioneros(cRes.data.data     ?? [])
+        setAlmacenes(aRes.data.data      ?? [])
+        setVSC(vscRes.data.data          ?? [])
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -154,6 +182,25 @@ export default function DashboardAdmin() {
     finally { setReordenando(null) }
   }
 
+  const abrirAsignar = (viajeId) => {
+    setAsignarForm({ camionero_id: '', vehiculo_id: '' })
+    setModalAsignar({ viajeId })
+  }
+
+  const handleAsignar = async (e) => {
+    e.preventDefault()
+    setAsignando(modalAsignar.viajeId)
+    try {
+      const payload = {}
+      if (asignarForm.camionero_id) payload.camionero_id = asignarForm.camionero_id
+      if (asignarForm.vehiculo_id)  payload.vehiculo_id  = asignarForm.vehiculo_id
+      await asignarCamionero(modalAsignar.viajeId, payload)
+      setModalAsignar(null)
+      await cargar()
+    } catch { /* silencioso */ }
+    finally { setAsignando(null) }
+  }
+
   if (loading) return <p style={{ color: 'var(--color-text-muted)' }}>Cargando…</p>
 
   const activos    = viajes.filter((v) => ESTADOS_ACTIVOS.includes(v.estado))
@@ -163,9 +210,14 @@ export default function DashboardAdmin() {
   const enViaje    = camioneros.filter((c) => activos.some((v) => v.camionero_id === c.id))
   const libres     = camioneros.filter((c) => !activos.some((v) => v.camionero_id === c.id))
 
-  const todosGrupos     = buildGrupos(camioneros, viajes)
+  const todosGrupos     = buildGrupos(camioneros, viajes, filtroAlmacen)
   const gruposFiltrados = filtrarGrupos(todosGrupos, query)
   const gruposPagina    = gruposFiltrados.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+
+  // Viajes sin conductor filtrados por almacén si aplica
+  const vscFiltrados = filtroAlmacen
+    ? viajesSinConductor // sin conductor no tienen camionero, no se filtran por almacén
+    : viajesSinConductor
 
   const doSearch = (q) => { setQuery(q); setPage(1) }
 
@@ -187,6 +239,7 @@ export default function DashboardAdmin() {
         </button>
       </div>
 
+      {/* Estadísticas */}
       <div className="stats-row" style={{ marginBottom: 20 }}>
         <StatCard label="Camioneros en viaje" value={enViaje.length}    color="var(--color-primary)" />
         <StatCard label="Camioneros libres"   value={libres.length}     color="#66bb6a" />
@@ -194,6 +247,83 @@ export default function DashboardAdmin() {
         <StatCard label="Finalizados hoy"     value={finHoy.length}     color="#90a4ae" />
       </div>
 
+      {/* Filtro almacén (solo superadmin) */}
+      {isAdmin() && almacenes.length > 0 && (
+        <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <label style={{ fontSize: 13, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+            Filtrar por almacén:
+          </label>
+          <select
+            value={filtroAlmacen}
+            onChange={(e) => { setFiltroAlmacen(e.target.value); setPage(1) }}
+            style={{ maxWidth: 260 }}
+          >
+            <option value="">Todos los almacenes</option>
+            {almacenes.map((a) => (
+              <option key={a.id} value={a.id}>{a.nombre}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Viajes sin conductor */}
+      {vscFiltrados.length > 0 && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <p className="card__title" style={{ margin: 0 }}>
+              Viajes sin conductor
+              <span style={{
+                marginLeft: 8, fontSize: 12, fontWeight: 600,
+                background: 'rgba(186,53,52,0.15)', color: 'var(--color-primary)',
+                padding: '2px 8px', borderRadius: 4,
+              }}>
+                {vscFiltrados.length}
+              </span>
+            </p>
+          </div>
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Origen</th>
+                  <th>Destino</th>
+                  <th>Tipo</th>
+                  <th>Fecha</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {vscFiltrados.map((v) => (
+                  <tr key={v.id}>
+                    <td style={{ fontSize: 13 }}>{v.origen  ?? <Dash />}</td>
+                    <td style={{ fontSize: 13 }}>{v.destino ?? <Dash />}</td>
+                    <td>{v.tipo ? <TipoBadge tipo={v.tipo} /> : <Dash />}</td>
+                    <td style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                      {fmtFecha(v.fecha_inicio) ?? <Dash />}
+                    </td>
+                    <td>
+                      <div className="dashboard-actions">
+                        <button
+                          className="btn btn--primary btn--sm"
+                          onClick={() => abrirAsignar(v.id)}
+                          style={{ whiteSpace: 'nowrap' }}
+                        >
+                          Asignar camionero
+                        </button>
+                        <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm" style={{ whiteSpace: 'nowrap' }}>
+                          Ver viaje
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla de camioneros */}
       <div className="card">
         <div className="table-controls">
           <p className="card__title" style={{ margin: 0 }}>Camioneros</p>
@@ -207,11 +337,11 @@ export default function DashboardAdmin() {
             />
           </div>
           <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-            {gruposFiltrados.length} de {camioneros.length} camioneros
+            {gruposFiltrados.length} de {todosGrupos.length} camioneros
           </span>
         </div>
 
-        {camioneros.length === 0 ? (
+        {todosGrupos.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin camioneros registrados.</p>
         ) : gruposFiltrados.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Sin resultados.</p>
@@ -222,46 +352,25 @@ export default function DashboardAdmin() {
                 <tr>
                   <th style={{ minWidth: 170 }}>Camionero</th>
                   <th style={{ width: 36 }}></th>{/* flechas orden */}
+                  <th style={{ width: 42, textAlign: 'center' }}>#</th>{/* columna orden numérico */}
                   <th>Origen</th>
                   <th>Destino</th>
                   <th>Tipo</th>
                   <th>Estado</th>
                   <th style={{ width: 72 }}>Fecha</th>
-                  <th style={{ minWidth: 200 }}>Próximo viaje</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {gruposPagina.map(({ camionero: c, viajes: vd }, gIdx) => {
+                {gruposPagina.map(({ camionero: c, viajes: vd }) => {
                   const pendientesDriver = vd.filter((v) => v.estado === 'pendiente')
-                  const primerActivo     = vd.find((v) => ESTADOS_ACTIVOS.includes(v.estado))
-                  const proximoViaje     = primerActivo ? (pendientesDriver[0] ?? null) : (pendientesDriver[1] ?? null)
                   const esLibre          = vd.length === 0
                   const rowspan          = esLibre ? 1 : vd.length
 
-                  // Contenido de la celda "Camionero" (rowspan)
                   const vehiculoActivo = vd[0]?.vehiculo ?? null
 
-                  // Contenido de "Próximo viaje" (siempre en la primera fila)
-                  const proxCell = proximoViaje ? (
-                    <div style={{ fontSize: 12, lineHeight: 1.5 }}>
-                      <div style={{ color: 'var(--color-primary)', fontWeight: 600, marginBottom: 1 }}>▶ Próximo</div>
-                      <div style={{ color: 'var(--color-text)' }}>
-                        {[proximoViaje.origen, proximoViaje.destino].filter(Boolean).join(' → ') || `Viaje #${proximoViaje.id}`}
-                      </div>
-                      {proximoViaje.fecha_inicio && (
-                        <div style={{ color: 'var(--color-text-muted)', fontSize: 11, marginTop: 1 }}>
-                          {fmtFecha(proximoViaje.fecha_inicio)}
-                        </div>
-                      )}
-                    </div>
-                  ) : null
-
                   const camioneroCell = (
-                    <td
-                      rowSpan={rowspan}
-                      className="dashboard-driver-cell"
-                    >
+                    <td rowSpan={rowspan} className="dashboard-driver-cell">
                       <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text)' }}>
                         {c.nombre} {c.apellidos}
                       </div>
@@ -280,26 +389,20 @@ export default function DashboardAdmin() {
                     </td>
                   )
 
-                  const proxCell_td = (
-                    <td rowSpan={rowspan} className="dashboard-prox-cell">
-                      {proxCell}
-                    </td>
-                  )
-
                   // Fila libre
                   if (esLibre) {
                     return [
                       <tr key={`g-${c.id}`} className="dashboard-group-row">
                         {camioneroCell}
                         <td></td>
+                        <td></td>
                         <td colSpan={4} style={{ opacity: 0.55 }}>
                           <span className="badge-libre">Libre</span>
                         </td>
                         <td></td>
-                        {proxCell_td}
                         <td></td>
                       </tr>,
-                      <tr key={`sep-${c.id}`} className="dashboard-spacer"><td colSpan={COLS + 1}></td></tr>,
+                      <tr key={`sep-${c.id}`} className="dashboard-spacer"><td colSpan={COLS + 2}></td></tr>,
                     ]
                   }
 
@@ -312,6 +415,9 @@ export default function DashboardAdmin() {
                       const puedeSubir  = esPendiente && idxPend > 0
                       const puedeBajar  = esPendiente && idxPend < pendientesDriver.length - 1
                       const enRe        = reordenando === v.id
+
+                      // Número de orden visible para pendientes
+                      const numOrden = esPendiente ? (idxPend + 1) : null
 
                       return (
                         <tr key={v.id} className={`dashboard-group-row${esPrimero ? ' dashboard-group-row--first' : ''}`}>
@@ -337,6 +443,25 @@ export default function DashboardAdmin() {
                             )}
                           </td>
 
+                          {/* Columna orden numérico */}
+                          <td style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)' }}>
+                            {numOrden ? (
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 24, height: 24,
+                                borderRadius: '50%',
+                                background: 'rgba(186,53,52,0.15)',
+                                color: 'var(--color-primary)',
+                                fontWeight: 700,
+                                fontSize: 12,
+                              }}>
+                                {numOrden}
+                              </span>
+                            ) : null}
+                          </td>
+
                           <td style={{ fontSize: 13 }}>{v.origen  ?? <Dash />}</td>
                           <td style={{ fontSize: 13 }}>{v.destino ?? <Dash />}</td>
                           <td>{v.tipo ? <TipoBadge tipo={v.tipo} /> : <Dash />}</td>
@@ -348,8 +473,6 @@ export default function DashboardAdmin() {
                           <td style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
                             {fmtFecha(v.fecha_inicio) ?? <Dash />}
                           </td>
-
-                          {esPrimero ? proxCell_td : null}
 
                           <td>
                             <div className="dashboard-actions">
@@ -371,9 +494,8 @@ export default function DashboardAdmin() {
                         </tr>
                       )
                     }),
-                    // Fila separadora entre grupos — evita bordes rotos con rowspan
                     <tr key={`sep-${c.id}`} className="dashboard-spacer">
-                      <td colSpan={COLS + 1}></td>
+                      <td colSpan={COLS + 2}></td>
                     </tr>,
                   ]
                 })}
@@ -389,6 +511,7 @@ export default function DashboardAdmin() {
         )}
       </div>
 
+      {/* Modal nuevo viaje */}
       {modalCamionero !== null && (
         <NuevoViaje
           defaultCamioneroId={modalCamionero.id}
@@ -396,6 +519,52 @@ export default function DashboardAdmin() {
           onClose={() => setModalCamionero(null)}
           onCreated={() => { setLoading(true); cargar() }}
         />
+      )}
+
+      {/* Modal asignar camionero a viaje sin conductor */}
+      {modalAsignar && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--color-surface)',
+            borderRadius: 12, padding: 24, maxWidth: 420, width: '100%',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ margin: 0 }}>Asignar camionero</h3>
+              <button className="btn btn--ghost btn--sm" onClick={() => setModalAsignar(null)}>✕</button>
+            </div>
+
+            <form onSubmit={handleAsignar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="form-group">
+                <label>Camionero</label>
+                <select
+                  value={asignarForm.camionero_id}
+                  onChange={(e) => setAsignarForm((p) => ({ ...p, camionero_id: e.target.value }))}
+                >
+                  <option value="">— Seleccionar —</option>
+                  {camioneros.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre} {c.apellidos}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn--ghost" onClick={() => setModalAsignar(null)}>Cancelar</button>
+                <button
+                  type="submit"
+                  className="btn btn--primary"
+                  disabled={!asignarForm.camionero_id || asignando === modalAsignar.viajeId}
+                >
+                  {asignando === modalAsignar.viajeId ? 'Asignando…' : 'Asignar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -407,9 +576,16 @@ function Dash() {
 
 function TipoBadge({ tipo }) {
   const colors = {
-    carga:           { bg: 'rgba(33,150,243,0.12)', fg: '#64b5f6' },
-    descarga:        { bg: 'rgba(255,152,0,0.12)',  fg: '#ffb74d' },
-    adelantar_carga: { bg: 'rgba(76,175,80,0.12)',  fg: '#81c784' },
+    carga_completa:   { bg: 'rgba(33,150,243,0.12)',  fg: '#64b5f6' },
+    descarga_completa:{ bg: 'rgba(255,152,0,0.12)',   fg: '#ffb74d' },
+    dormir:           { bg: 'rgba(76,175,80,0.12)',   fg: '#81c784' },
+    vacio:            { bg: 'rgba(150,150,150,0.10)', fg: '#aaa' },
+    carga_parcial:    { bg: 'rgba(33,150,243,0.08)',  fg: '#90caf9' },
+    descarga_parcial: { bg: 'rgba(255,152,0,0.08)',   fg: '#ffcc80' },
+    // compatibilidad
+    carga:            { bg: 'rgba(33,150,243,0.12)',  fg: '#64b5f6' },
+    descarga:         { bg: 'rgba(255,152,0,0.12)',   fg: '#ffb74d' },
+    adelantar_carga:  { bg: 'rgba(76,175,80,0.12)',   fg: '#81c784' },
   }
   const { bg, fg } = colors[tipo] ?? { bg: 'rgba(150,150,150,0.12)', fg: '#aaa' }
   return (

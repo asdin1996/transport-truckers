@@ -22,9 +22,16 @@ const ESTADO_LABELS = {
 }
 
 const TIPO_LABELS = {
-  carga:           'Carga',
-  descarga:        'Descarga',
-  adelantar_carga: 'Adelantar carga',
+  carga_completa:   'Carga Completa',
+  descarga_completa:'Descarga Completa',
+  dormir:           'Dormir (Adelantar Carga)',
+  vacio:            'Vacío',
+  carga_parcial:    'Carga Parcial',
+  descarga_parcial: 'Descarga Parcial',
+  // compatibilidad con valores anteriores
+  carga:            'Carga',
+  descarga:         'Descarga',
+  adelantar_carga:  'Adelantar carga',
 }
 
 const ESTADOS = Object.keys(ESTADO_LABELS)
@@ -42,7 +49,7 @@ function SectionLabel({ children }) {
 }
 
 export default function ExportarViajes({ viajes, onClose }) {
-  const [opts, setOpts]     = useState({ camioneros: [], vehiculos: [], paradas: [] })
+  const [opts, setOpts]       = useState({ camioneros: [], vehiculos: [], paradas: [] })
   const [loading, setLoading] = useState(true)
 
   const [filtros, setFiltros] = useState({
@@ -91,17 +98,19 @@ export default function ExportarViajes({ viajes, onClose }) {
 
   const exportar = () => {
     const filas = resultado.map((v) => ({
-      'ID':             v.id,
-      'Estado':         ESTADO_LABELS[v.estado] ?? v.estado,
-      'Tipo':           TIPO_LABELS[v.tipo] ?? v.tipo ?? '',
-      'Origen':         v.origen  ?? '',
-      'Destino':        v.destino ?? '',
-      'Camionero':      v.camionero ? `${v.camionero.nombre} ${v.camionero.apellidos}` : '',
-      'Vehículo':       v.vehiculo  ? `${v.vehiculo.matricula} · ${v.vehiculo.marca} ${v.vehiculo.modelo}` : '',
-      'Fecha inicio':   v.fecha_inicio ?? '',
-      'Fecha fin':      v.fecha_fin    ?? '',
-      'Inicio real':    v.hora_inicio  ? new Date(v.hora_inicio).toLocaleString('es-ES') : '',
-      'Fin real':       v.hora_fin     ? new Date(v.hora_fin).toLocaleString('es-ES')    : '',
+      'ID':                       v.id,
+      'Estado':                   ESTADO_LABELS[v.estado] ?? v.estado,
+      'Tipo':                     TIPO_LABELS[v.tipo] ?? v.tipo ?? '',
+      'Organización contratante': v.organizacion_contratante?.nombre ?? '',
+      'Origen':                   v.origen  ?? '',
+      'Destino':                  v.destino ?? '',
+      'Camionero':                v.camionero ? `${v.camionero.nombre} ${v.camionero.apellidos}` : '',
+      'Vehículo':                 v.vehiculo  ? `${v.vehiculo.matricula} · ${v.vehiculo.marca} ${v.vehiculo.modelo}` : '',
+      'Material':                 v.tipo_material?.nombre ?? '',
+      'Fecha inicio':             v.fecha_inicio ?? '',
+      'Fecha fin':                v.fecha_fin    ?? '',
+      'Inicio real':              v.hora_inicio  ? new Date(v.hora_inicio).toLocaleString('es-ES') : '',
+      'Fin real':                 v.hora_fin     ? new Date(v.hora_fin).toLocaleString('es-ES')    : '',
       'Duración': (() => {
         if (!v.duracion_minutos) return ''
         const h = Math.floor(v.duracion_minutos / 60)
@@ -110,7 +119,8 @@ export default function ExportarViajes({ viajes, onClose }) {
         if (h > 0)          return `${h}h`
         return `${m} min`
       })(),
-      'Notas':          v.notas ?? '',
+      'Motivo cancelación':       v.motivo_cancelacion?.nombre ?? '',
+      'Notas':                    v.notas ?? '',
     }))
 
     const ws = XLSX.utils.json_to_sheet(filas)
@@ -235,6 +245,16 @@ export default function ExportarViajes({ viajes, onClose }) {
                 <option key={c.id} value={c.id}>{c.nombre} {c.apellidos}</option>
               ))}
             </select>
+          </div>
+
+          {/* Columnas incluidas en el Excel */}
+          <div style={{
+            background: 'var(--color-surface2)',
+            borderRadius: 8, padding: '10px 14px', fontSize: 12,
+            color: 'var(--color-text-muted)',
+          }}>
+            <strong style={{ color: 'var(--color-text)', display: 'block', marginBottom: 4 }}>Columnas en el Excel:</strong>
+            ID · Estado · Tipo · Organización contratante · Origen · Destino · Camionero · Vehículo · Material · Fechas · Duración · Motivo cancelación · Notas
           </div>
 
           {/* Previsualización */}

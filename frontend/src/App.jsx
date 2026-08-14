@@ -15,6 +15,8 @@ import MaponConfig from './pages/admin/configuracion/Mapon'
 import TiposMaterial from './pages/admin/configuracion/TiposMaterial'
 import Almacenes from './pages/admin/configuracion/Almacenes'
 import GestionUsuarios from './pages/admin/configuracion/GestionUsuarios'
+import MotivosCancelacion from './pages/admin/configuracion/MotivosCancelacion'
+import OrganizacionesContratantes from './pages/admin/configuracion/OrganizacionesContratantes'
 import './components/layout/Layout.css'
 
 function AdminOnlyRoute({ children }) {
@@ -41,8 +43,10 @@ export default function App() {
               <Route path="/configuracion/paradas"          element={<Paradas />} />
               <Route path="/configuracion/mapon"            element={<MaponConfig />} />
               <Route path="/configuracion/tipos-material"   element={<TiposMaterial />} />
-              <Route path="/configuracion/almacenes"        element={<Almacenes />} />
-              <Route path="/configuracion/usuarios"         element={<AdminOnlyRoute><GestionUsuarios /></AdminOnlyRoute>} />
+              <Route path="/configuracion/almacenes"                   element={<Almacenes />} />
+              <Route path="/configuracion/motivos-cancelacion"         element={<MotivosCancelacion />} />
+              <Route path="/configuracion/organizaciones-contratantes" element={<OrganizacionesContratantes />} />
+              <Route path="/configuracion/usuarios"                    element={<AdminOnlyRoute><GestionUsuarios /></AdminOnlyRoute>} />
             </Route>
           </Route>
 

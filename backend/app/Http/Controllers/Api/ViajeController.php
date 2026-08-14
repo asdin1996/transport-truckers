@@ -24,6 +24,15 @@ class ViajeController extends Controller
         ]);
     }
 
+    public function sinConductor(): JsonResponse
+    {
+        return response()->json([
+            'status'  => 'ok',
+            'message' => null,
+            'data'    => $this->service->getSinConductor(),
+        ]);
+    }
+
     public function store(StoreViajeRequest $request): JsonResponse
     {
         $trip = $this->service->create($request->validated());
@@ -150,6 +159,73 @@ class ViajeController extends Controller
         return response()->json([
             'status'  => 'ok',
             'message' => null,
+            'data'    => $this->service->find($id),
+        ]);
+    }
+
+    public function cancelar(Request $request, int $id): JsonResponse
+    {
+        $trip = $this->service->find($id);
+
+        if (! $trip) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Viaje no encontrado.',
+                'data'    => null,
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if (! $this->service->canAccess($trip)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No tienes permiso para cancelar este viaje.',
+                'data'    => null,
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($trip->estado === 'cancelado') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'El viaje ya está cancelado.',
+                'data'    => null,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $validated = $request->validate([
+            'motivo_cancelacion_id' => ['nullable', 'exists:motivos_cancelacion,id'],
+        ]);
+
+        $this->service->cancelar($trip, $validated['motivo_cancelacion_id'] ?? null);
+
+        return response()->json([
+            'status'  => 'ok',
+            'message' => 'Viaje cancelado.',
+            'data'    => $this->service->find($id),
+        ]);
+    }
+
+    public function asignarCamionero(Request $request, int $id): JsonResponse
+    {
+        $trip = $this->service->find($id);
+
+        if (! $trip) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Viaje no encontrado.',
+                'data'    => null,
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $validated = $request->validate([
+            'camionero_id' => ['nullable', 'exists:camioneros,id'],
+            'vehiculo_id'  => ['nullable', 'exists:vehiculos,id'],
+        ]);
+
+        $this->service->update($id, $validated);
+
+        return response()->json([
+            'status'  => 'ok',
+            'message' => 'Camionero asignado.',
             'data'    => $this->service->find($id),
         ]);
     }

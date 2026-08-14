@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\MaponController;
 use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\GestionController;
 use App\Http\Controllers\Api\MensajeController;
+use App\Http\Controllers\Api\MotivoCancelacionController;
+use App\Http\Controllers\Api\OrganizacionContratanteController;
 use App\Http\Controllers\Api\UbicacionController;
 use App\Http\Controllers\Api\AlmacenController;
 use App\Http\Controllers\Api\GestorController;
@@ -65,10 +67,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('tipos-material/{id}', [TipoMaterialController::class, 'update']);
     Route::delete('tipos-material/{id}', [TipoMaterialController::class, 'destroy']);
 
+    // Motivos de cancelación (configuración)
+    Route::get('motivos-cancelacion', [MotivoCancelacionController::class, 'index']);
+    Route::post('motivos-cancelacion', [MotivoCancelacionController::class, 'store']);
+    Route::put('motivos-cancelacion/{id}', [MotivoCancelacionController::class, 'update']);
+    Route::delete('motivos-cancelacion/{id}', [MotivoCancelacionController::class, 'destroy']);
+
+    // Organizaciones contratantes (configuración)
+    Route::get('organizaciones-contratantes', [OrganizacionContratanteController::class, 'index']);
+    Route::post('organizaciones-contratantes', [OrganizacionContratanteController::class, 'store']);
+    Route::put('organizaciones-contratantes/{id}', [OrganizacionContratanteController::class, 'update']);
+    Route::delete('organizaciones-contratantes/{id}', [OrganizacionContratanteController::class, 'destroy']);
+
     // Viajes
+    Route::get('viajes/sin-conductor', [ViajeController::class, 'sinConductor']);
     Route::apiResource('viajes', ViajeController::class);
     Route::patch('viajes/{id}/estado', [ViajeController::class, 'changeStatus']);
     Route::patch('viajes/{id}/paradas', [ViajeController::class, 'updateParadas']);
+    Route::patch('viajes/{id}/cancelar', [ViajeController::class, 'cancelar']);
+    Route::patch('viajes/{id}/asignar-camionero', [ViajeController::class, 'asignarCamionero']);
 
     // Gestiones (notas/comentarios de un viaje)
     Route::get('viajes/{tripId}/gestiones', [GestionController::class, 'index']);

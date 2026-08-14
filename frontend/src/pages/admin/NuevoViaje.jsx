@@ -6,11 +6,21 @@ import { getCamioneros } from '../../services/camioneros'
 import { getVehiculos } from '../../services/vehiculos'
 import { getParadas } from '../../services/paradas'
 import { getTiposMaterial } from '../../services/tiposMaterial'
+import { getOrganizacionesContratantes } from '../../services/organizacionesContratantes'
 import { createViaje } from '../../services/viajes'
 import Combobox from '../../components/Combobox'
 import Modal from '../../components/Modal'
 
 registerLocale('es', es)
+
+const TIPOS_VIAJE = [
+  { value: 'carga_completa',    label: 'Carga Completa' },
+  { value: 'descarga_completa', label: 'Descarga Completa' },
+  { value: 'dormir',            label: 'Dormir (Adelantar Carga)' },
+  { value: 'vacio',             label: 'Vacío' },
+  { value: 'carga_parcial',     label: 'Carga Parcial' },
+  { value: 'descarga_parcial',  label: 'Descarga Parcial' },
+]
 
 function SectionLabel({ children }) {
   return (
@@ -28,30 +38,43 @@ function SectionLabel({ children }) {
 }
 
 export default function NuevoViaje({ onClose, onCreated, defaultCamioneroId = '', defaultVehiculoId = '' }) {
-  const [options, setOptions] = useState({ camioneros: [], vehiculos: [], paradas: [], tiposMaterial: [] })
+  const [options, setOptions] = useState({
+    camioneros: [],
+    vehiculos: [],
+    paradas: [],
+    tiposMaterial: [],
+    organizaciones: [],
+  })
   const [form, setForm] = useState({
-    camionero_id:     defaultCamioneroId,
-    vehiculo_id:      defaultVehiculoId,
-    tipo:             'carga',
-    tipo_material_id: '',
-    origen:           '',
-    destino:          '',
-    estado:           'pendiente',
-    fecha_inicio:     new Date(),
-    notas:            '',
+    camionero_id:                defaultCamioneroId,
+    vehiculo_id:                 defaultVehiculoId,
+    tipo:                        'carga_completa',
+    tipo_material_id:            '',
+    organizacion_contratante_id: '',
+    origen:                      '',
+    destino:                     '',
+    fecha_inicio:                new Date(),
+    notas:                       '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState(null)
 
   useEffect(() => {
-    Promise.all([getCamioneros(), getVehiculos(), getParadas(), getTiposMaterial()])
-      .then(([cRes, vRes, pRes, tmRes]) => {
+    Promise.all([
+      getCamioneros(),
+      getVehiculos(),
+      getParadas(),
+      getTiposMaterial(),
+      getOrganizacionesContratantes(),
+    ])
+      .then(([cRes, vRes, pRes, tmRes, orgRes]) => {
         setOptions({
-          camioneros:    cRes.data.data  ?? [],
-          vehiculos:     vRes.data.data  ?? [],
-          paradas:       pRes.data.data  ?? [],
-          tiposMaterial: tmRes.data.data ?? [],
+          camioneros:    cRes.data.data   ?? [],
+          vehiculos:     vRes.data.data   ?? [],
+          paradas:       pRes.data.data   ?? [],
+          tiposMaterial: tmRes.data.data  ?? [],
+          organizaciones: orgRes.data.data ?? [],
         })
       })
       .catch(() => setError('Error al cargar los datos.'))
@@ -69,10 +92,11 @@ export default function NuevoViaje({ onClose, onCreated, defaultCamioneroId = ''
       const payload = { ...form }
       if (payload.fecha_inicio instanceof Date)
         payload.fecha_inicio = payload.fecha_inicio.toISOString().slice(0, 10)
-      if (!payload.camionero_id)     delete payload.camionero_id
-      if (!payload.vehiculo_id)      delete payload.vehiculo_id
-      if (!payload.tipo_material_id) delete payload.tipo_material_id
-      if (!payload.notas)            delete payload.notas
+      if (!payload.camionero_id)                delete payload.camionero_id
+      if (!payload.vehiculo_id)                 delete payload.vehiculo_id
+      if (!payload.tipo_material_id)            delete payload.tipo_material_id
+      if (!payload.organizacion_contratante_id) delete payload.organizacion_contratante_id
+      if (!payload.notas)                       delete payload.notas
       await createViaje(payload)
       onCreated?.()
       onClose()
@@ -133,9 +157,9 @@ export default function NuevoViaje({ onClose, onCreated, defaultCamioneroId = ''
                 <div className="form-group">
                   <label>Tipo de viaje</label>
                   <select value={form.tipo} onChange={set('tipo')}>
-                    <option value="carga">Carga</option>
-                    <option value="descarga">Descarga</option>
-                    <option value="adelantar_carga">Adelantar carga</option>
+                    {TIPOS_VIAJE.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="form-group">
@@ -149,14 +173,14 @@ export default function NuevoViaje({ onClose, onCreated, defaultCamioneroId = ''
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Estado inicial</label>
-                  <select value={form.estado} onChange={set('estado')}>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="en_camino">En camino</option>
-                  </select>
-                </div>
+              <div className="form-group">
+                <label>Organización contratante <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional)</span></label>
+                <select value={form.organizacion_contratante_id} onChange={set('organizacion_contratante_id')}>
+                  <option value="">— Sin especificar —</option>
+                  {options.organizaciones.map((o) => (
+                    <option key={o.id} value={o.id}>{o.nombre}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Asignación */}
