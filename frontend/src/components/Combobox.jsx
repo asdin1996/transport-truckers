@@ -179,12 +179,12 @@ export default function Combobox({ value, onChange, options = [], placeholder = 
                   padding: '8px 14px',
                   cursor: 'pointer',
                   fontSize: 13,
-                  background: isActive   ? 'var(--color-surface2)' : 'transparent',
-                  color:      isSelected ? 'var(--color-primary)'  : 'var(--color-text)',
+                  background: isActive   ? '#1a4fa0' : 'transparent',
+                  color:      isActive   ? '#fff'
+                            : isSelected ? '#5b9cf6'
+                            : 'var(--color-text)',
                   fontWeight: isSelected ? 600 : 400,
-                  borderLeft: isActive
-                    ? '2px solid var(--color-primary)'
-                    : '2px solid transparent',
+                  borderLeft: '2px solid transparent',
                   transition: 'background 0.1s',
                 }}
               >
