@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getViajes, getViajesSinConductor, cambiarEstado, cambiarOrden, asignarCamionero } from '../../services/viajes'
+import { getViajes, getViajesSinConductor, cambiarEstado, cambiarOrden, asignarCamionero, deleteViaje } from '../../services/viajes'
 import { getCamionerosAlmacen } from '../../services/camioneros'
 import { getAlmacenes } from '../../services/almacenes'
 import { useAuth } from '../../context/AuthContext'
@@ -111,6 +111,8 @@ export default function DashboardAdmin() {
   const [modalCamionero, setModalCamionero]     = useState(null)
   const [modalAsignar, setModalAsignar]         = useState(null) // { viajeId }
   const [asignarForm, setAsignarForm]           = useState({ camionero_id: '', vehiculo_id: '' })
+  const [confirmDelete, setConfirmDelete]       = useState(null) // viajeId
+  const [eliminando, setEliminando]             = useState(null)
   const [now, setNow]                           = useState(new Date())
 
   const cargar = () =>
@@ -180,6 +182,13 @@ export default function DashboardAdmin() {
       )
     } catch { /* silencioso */ }
     finally { setReordenando(null) }
+  }
+
+  const handleEliminar = async (viajeId) => {
+    setEliminando(viajeId)
+    try { await deleteViaje(viajeId); await cargar() }
+    catch { /* silencioso */ }
+    finally { setEliminando(null); setConfirmDelete(null) }
   }
 
   const abrirAsignar = (viajeId) => {
@@ -318,6 +327,34 @@ export default function DashboardAdmin() {
                         <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm" style={{ whiteSpace: 'nowrap' }}>
                           Ver viaje
                         </Link>
+                        {confirmDelete === v.id ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <button
+                              className="btn btn--danger btn--sm"
+                              disabled={eliminando === v.id}
+                              onClick={() => handleEliminar(v.id)}
+                              style={{ whiteSpace: 'nowrap' }}
+                            >
+                              {eliminando === v.id ? '…' : '¿Eliminar?'}
+                            </button>
+                            <button
+                              className="btn btn--ghost btn--sm"
+                              onClick={() => setConfirmDelete(null)}
+                              style={{ padding: '5px 8px' }}
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ) : (
+                          <button
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => setConfirmDelete(v.id)}
+                            title="Eliminar viaje"
+                            style={{ padding: '5px 9px', color: '#e57373' }}
+                          >
+                            🗑
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
