@@ -94,6 +94,34 @@ function fmtFecha(iso) {
 
 const COLS = 7 // número total de columnas de la tabla principal
 
+// Flujos de estados por tipo de viaje (igual que ViajeDetalle)
+const FLUJOS = {
+  carga_completa:   ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado'],
+  descarga_completa:['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado'],
+  dormir:           ['pendiente', 'en_camino', 'llegada_destino',                'finalizado'],
+  vacio:            ['pendiente', 'en_camino', 'llegada_destino',                'finalizado'],
+  carga_parcial:    ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado'],
+  descarga_parcial: ['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado'],
+  carga:            ['pendiente', 'en_camino', 'llegada_destino', 'cargando',    'finalizado'],
+  descarga:         ['pendiente', 'en_camino', 'llegada_destino', 'descargando', 'finalizado'],
+  adelantar_carga:  ['pendiente', 'en_camino', 'llegada_destino',                'finalizado'],
+}
+
+function getSiguienteEstado(estado, tipo) {
+  const flujo = FLUJOS[tipo] ?? ['pendiente', 'en_camino', 'llegada_destino', 'finalizado']
+  const idx = flujo.indexOf(estado)
+  if (idx === -1 || idx >= flujo.length - 1) return null
+  return flujo[idx + 1]
+}
+
+const ACCION_BTN_LABEL = {
+  en_camino:       '▶ Comenzar',
+  llegada_destino: 'En destino',
+  cargando:        'Iniciar carga',
+  descargando:     'Iniciar descarga',
+  finalizado:      '✓ Finalizar',
+}
+
 export default function DashboardAdmin() {
   const { isAdmin } = useAuth()
 
@@ -143,9 +171,11 @@ export default function DashboardAdmin() {
     return () => clearTimeout(timer)
   }, [])
 
-  const handleComenzar = async (viajeId) => {
+  const handleAvanzarEstado = async (viajeId, estadoActual, tipo) => {
+    const siguiente = getSiguienteEstado(estadoActual, tipo)
+    if (!siguiente) return
     setComenzando(viajeId)
-    try { await cambiarEstado(viajeId, 'en_camino'); await cargar() }
+    try { await cambiarEstado(viajeId, siguiente); await cargar() }
     catch { /* silencioso */ }
     finally { setComenzando(null) }
   }
@@ -498,16 +528,21 @@ export default function DashboardAdmin() {
 
                           <td>
                             <div className="dashboard-actions">
-                              {esPendiente && (
-                                <button
-                                  className="btn btn--primary btn--sm"
-                                  disabled={comenzando === v.id}
-                                  onClick={() => handleComenzar(v.id)}
-                                  style={{ whiteSpace: 'nowrap' }}
-                                >
-                                  {comenzando === v.id ? '…' : '▶ Comenzar'}
-                                </button>
-                              )}
+                              {(() => {
+                                const siguiente = getSiguienteEstado(v.estado, v.tipo)
+                                if (!siguiente) return null
+                                const esFinalizar = siguiente === 'finalizado'
+                                return (
+                                  <button
+                                    className={`btn btn--sm ${esFinalizar ? 'btn--success' : 'btn--primary'}`}
+                                    disabled={comenzando === v.id}
+                                    onClick={() => handleAvanzarEstado(v.id, v.estado, v.tipo)}
+                                    style={{ whiteSpace: 'nowrap' }}
+                                  >
+                                    {comenzando === v.id ? '…' : ACCION_BTN_LABEL[siguiente]}
+                                  </button>
+                                )
+                              })()}
                               <Link to={`/viajes/${v.id}`} className="btn btn--ghost btn--sm" style={{ whiteSpace: 'nowrap' }}>
                                 Ver viaje
                               </Link>

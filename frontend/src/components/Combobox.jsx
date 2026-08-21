@@ -62,6 +62,9 @@ export default function Combobox({ value, onChange, options = [], placeholder = 
         e.preventDefault()
         setOpen(true)
         setActiveIdx(0)
+      } else if (e.key === 'Enter') {
+        // Evitar que Enter cierre/envíe el formulario padre cuando el dropdown está cerrado
+        e.preventDefault()
       }
       return
     }
@@ -91,12 +94,11 @@ export default function Combobox({ value, onChange, options = [], placeholder = 
           e.preventDefault()
           select(filtered[0])
         } else {
-          // Cerrar el desplegable pero NO seleccionar — el formulario
-          // solo se enviará si hay un valor limpio ya seleccionado
+          // Cerrar el desplegable pero NO enviar el formulario padre
+          e.preventDefault()
           setOpen(false)
           setActiveIdx(-1)
-          // Si el texto no coincide exactamente con ninguna opción,
-          // buscar coincidencia exacta (case-insensitive) y seleccionar
+          // Si el texto coincide exactamente con alguna opción, seleccionarla
           const exact = normalized.find(
             (o) => o.label.toLowerCase() === query.trim().toLowerCase()
           )

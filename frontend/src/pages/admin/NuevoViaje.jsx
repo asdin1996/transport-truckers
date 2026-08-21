@@ -84,10 +84,27 @@ export default function NuevoViaje({ onClose, onCreated, defaultCamioneroId = ''
   const set = (f) => (e) => setForm((prev) => ({ ...prev, [f]: e.target.value }))
   const setVal = (f) => (val) => setForm((prev) => ({ ...prev, [f]: val }))
 
+  // Bloquear Enter en cualquier campo que no sea botón ni textarea
+  const handleFormKeyDown = (e) => {
+    if (e.key === 'Enter' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault()
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSaving(true)
     setError(null)
+
+    if (!form.origen.trim()) {
+      setError('El origen es obligatorio.')
+      return
+    }
+    if (!form.destino.trim()) {
+      setError('El destino es obligatorio.')
+      return
+    }
+
+    setSaving(true)
     try {
       const payload = { ...form }
       if (payload.fecha_inicio instanceof Date)
@@ -128,13 +145,13 @@ export default function NuevoViaje({ onClose, onCreated, defaultCamioneroId = ''
           <>
             {error && <div className="alert alert--error" style={{ marginBottom: 16 }}>{error}</div>}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* Ruta */}
               <SectionLabel>Ruta</SectionLabel>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Origen</label>
+                  <label>Origen <span style={{ color: '#ba3534' }}>*</span></label>
                   <Combobox
                     value={form.origen}
                     onChange={setVal('origen')}
@@ -143,7 +160,7 @@ export default function NuevoViaje({ onClose, onCreated, defaultCamioneroId = ''
                   />
                 </div>
                 <div className="form-group">
-                  <label>Destino</label>
+                  <label>Destino <span style={{ color: '#ba3534' }}>*</span></label>
                   <Combobox
                     value={form.destino}
                     onChange={setVal('destino')}
